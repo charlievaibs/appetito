@@ -23,7 +23,7 @@ export async function GET() {
   }
   const fresh = Date.now() - cache.fetchedAt <= FRESH_MS;
   return Response.json(
-    { ...cache.rates, source: "bcv", fresh },
+    { ...cache.rates, fresh },
     { headers: { "cache-control": "public, max-age=300, s-maxage=900, stale-while-revalidate=3600" } },
   );
 }

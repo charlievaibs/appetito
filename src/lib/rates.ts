@@ -17,7 +17,14 @@ export type PricingSettings = {
 };
 
 /** Tasas oficiales del BCV (bolívares por unidad). */
-export type BcvRates = { usd: number; eur: number; date: string; fresh?: boolean };
+export type BcvRates = {
+  usd: number;
+  eur: number;
+  date: string;
+  fresh?: boolean;
+  /** "dolarapi" cuando el BCV no respondió y se usó el respaldo. */
+  source?: "bcv" | "dolarapi";
+};
 
 export const USD_ONLY: PricingSettings = { display: "usd", source: "bcv_usd", manualRate: null, manualRateAt: null };
 
@@ -45,9 +52,9 @@ export function parsePricingSettings(json: unknown): PricingSettings {
 /** Interpreta la respuesta de /api/tasas; null si no tiene la forma esperada. */
 export function parseBcvResponse(json: unknown): BcvRates | null {
   if (typeof json !== "object" || json === null) return null;
-  const { usd, eur, date, fresh } = json as Record<string, unknown>;
+  const { usd, eur, date, fresh, source } = json as Record<string, unknown>;
   if (typeof usd !== "number" || typeof eur !== "number" || typeof date !== "string") return null;
-  return { usd, eur, date, fresh: fresh !== false };
+  return { usd, eur, date, fresh: fresh !== false, source: source === "dolarapi" ? "dolarapi" : "bcv" };
 }
 
 /** La tasa (bolívares por dólar) que corresponde aplicar, o null si aún no se conoce. */
@@ -90,5 +97,6 @@ export function describeRate(settings: PricingSettings, bcv: BcvRates | null): s
     return `${RATE_SOURCE_LABEL.manual}: ${shown}${day ? ` · ${day}` : ""}`;
   }
   const [y, m, d] = (bcv?.date ?? "").split("-");
-  return `${RATE_SOURCE_LABEL[settings.source]}: ${shown}${y ? ` · ${d}/${m}/${y}` : ""}`;
+  const via = bcv?.source === "dolarapi" ? " (vía DolarApi)" : "";
+  return `${RATE_SOURCE_LABEL[settings.source]}${via}: ${shown}${y ? ` · ${d}/${m}/${y}` : ""}`;
 }

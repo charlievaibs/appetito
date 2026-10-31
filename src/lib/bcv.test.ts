@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBcvNumber, parseBcvRates } from "./bcv";
+import { parseBcvNumber, parseBcvRates, parseDolarApi } from "./bcv";
 
 /** Recorte de la portada del BCV con la misma estructura que la página real. */
 const page = `
@@ -34,5 +34,20 @@ describe("parseBcvRates", () => {
     expect(parseBcvRates("<html>otra cosa</html>")).toBeNull();
     expect(parseBcvRates(page.replace('id="dolar"', 'id="otro"'))).toBeNull();
     expect(parseBcvRates(page.replace("Fecha Valor:", "Fecha:"))).toBeNull();
+  });
+});
+
+describe("parseDolarApi", () => {
+  it("lee promedio y fecha", () => {
+    expect(parseDolarApi({ moneda: "USD", promedio: 889.2553, fechaActualizacion: "2026-10-30T00:00:00-04:00" })).toEqual({
+      rate: 889.2553,
+      date: "2026-10-30",
+    });
+  });
+
+  it("descarta respuestas raras", () => {
+    expect(parseDolarApi(null)).toBeNull();
+    expect(parseDolarApi({ promedio: null, fechaActualizacion: "2026-10-30" })).toBeNull();
+    expect(parseDolarApi({ promedio: 1, fechaActualizacion: "ayer" })).toBeNull();
   });
 });
