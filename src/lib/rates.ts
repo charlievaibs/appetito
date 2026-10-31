@@ -100,3 +100,8 @@ export function describeRate(settings: PricingSettings, bcv: BcvRates | null): s
   const via = bcv?.source === "dolarapi" ? " (vía DolarApi)" : "";
   return `${RATE_SOURCE_LABEL[settings.source]}${via}: ${shown}${y ? ` · ${d}/${m}/${y}` : ""}`;
 }
+
+/** Cuánto es un importe en dólares al pagar en bolívares con la tasa dada (para mostrar antes de cobrar). */
+export function vesFor(usdCents: number, rate: number | null): string | null {
+  return rate === null ? null : formatVes(toVesCents(usdCents, rate));
+}

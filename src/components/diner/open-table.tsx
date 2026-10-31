@@ -17,7 +17,9 @@ import {
   type SessionContext,
 } from "@/lib/diner-api";
 import { clearSavedSession } from "@/lib/diner-session";
-import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
+import type { ChangeRequest, DishWithOptions, OrderItem, Payment, PaymentItem, ServiceRequest } from "@/lib/db";
+import type { PaymentMethod } from "@/lib/payments";
+import { BillTab } from "./bill-tab";
 import { RateNote, usePricing } from "@/lib/pricing";
 import {
   canDinerEdit,
@@ -41,11 +43,15 @@ type Props = {
     changeRequests: ChangeRequest[];
     joinCode: string | null;
     pricing: PricingSettings;
+    payments: Payment[];
+    paymentItems: PaymentItem[];
+    paymentMethods: PaymentMethod[];
+    paymentInstructions: string | null;
   };
   reload: () => Promise<void>;
 };
 
-type Tab = "menu" | "mine" | "table";
+type Tab = "menu" | "mine" | "table" | "bill";
 
 /**
  * Lo que se está personalizando: un plato nuevo, uno ya pedido que se edita, o un
@@ -59,7 +65,7 @@ type Picking = { dish: DishWithOptions; editing?: OrderItem; asRequest?: boolean
  */
 export function OpenTable({ data, reload }: Props) {
   const { format } = usePricing();
-  const { userId, ctx, dishes, items, requests, changeRequests, joinCode } = data;
+  const { userId, ctx, dishes, items, requests, changeRequests, joinCode, payments, paymentItems, paymentMethods, paymentInstructions } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
   const [picking, setPicking] = useState<Picking | null>(null);
@@ -209,6 +215,9 @@ export function OpenTable({ data, reload }: Props) {
         <TabButton active={tab === "table"} onClick={() => setTab("table")}>
           Mesa
         </TabButton>
+        <TabButton active={tab === "bill"} onClick={() => setTab("bill")}>
+          Cuenta
+        </TabButton>
       </div>
 
       <div className="mt-4" role="tabpanel">
@@ -249,6 +258,20 @@ export function OpenTable({ data, reload }: Props) {
                 </p>
               </>
             }
+          />
+        )}
+
+        {tab === "bill" && (
+          <BillTab
+            sessionId={ctx.sessionId}
+            userId={userId}
+            seatId={seatId}
+            items={items}
+            payments={payments}
+            paymentItems={paymentItems}
+            methods={paymentMethods}
+            instructions={paymentInstructions}
+            onChanged={reload}
           />
         )}
 

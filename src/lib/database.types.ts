@@ -384,6 +384,66 @@ export type Database = {
           },
         ];
       };
+      payment_items: {
+        Row: { amount_usd_cents: number; item_id: string; payment_id: string; session_id: string };
+        Insert: { amount_usd_cents: number; item_id: string; payment_id: string; session_id: string };
+        Update: { amount_usd_cents?: number; item_id?: string; payment_id?: string; session_id?: string };
+        Relationships: [];
+      };
+      payments: {
+        Row: {
+          amount_paid_cents: number;
+          amount_usd_cents: number;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          id: string;
+          method: string;
+          payer_name: string | null;
+          rate: number | null;
+          reference: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          restaurant_id: string;
+          session_id: string;
+          status: string;
+        };
+        Insert: {
+          amount_paid_cents: number;
+          amount_usd_cents: number;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          id?: string;
+          method: string;
+          payer_name?: string | null;
+          rate?: number | null;
+          reference?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id: string;
+          session_id: string;
+          status?: string;
+        };
+        Update: {
+          amount_paid_cents?: number;
+          amount_usd_cents?: number;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          id?: string;
+          method?: string;
+          payer_name?: string | null;
+          rate?: number | null;
+          reference?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id?: string;
+          session_id?: string;
+          status?: string;
+        };
+        Relationships: [];
+      };
       restaurant_members: {
         Row: {
           created_at: string;
@@ -415,6 +475,8 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          payment_instructions: string | null;
+          payment_methods: string[];
           manual_rate: number | null;
           manual_rate_at: string | null;
           price_display: string;
@@ -436,6 +498,8 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          payment_instructions?: string | null;
+          payment_methods?: string[];
           manual_rate?: number | null;
           manual_rate_at?: string | null;
           price_display?: string;
@@ -457,6 +521,8 @@ export type Database = {
           slug: string;
         };
         Update: {
+          payment_instructions?: string | null;
+          payment_methods?: string[];
           manual_rate?: number | null;
           manual_rate_at?: string | null;
           price_display?: string;
@@ -677,6 +743,34 @@ export type Database = {
         Args: { p_kind: string; p_session_id: string };
         Returns: string;
       };
+      request_payment: {
+        Args: { p_item_ids: string[]; p_method: string; p_payer_name?: string; p_reference?: string; p_session_id: string };
+        Returns: string;
+      };
+      staff_record_payment: {
+        Args: {
+          p_currency?: string;
+          p_item_ids: string[];
+          p_method: string;
+          p_payer_name?: string;
+          p_rate?: number;
+          p_reference?: string;
+          p_session_id: string;
+        };
+        Returns: string;
+      };
+      confirm_payment: {
+        Args: {
+          p_accept: boolean;
+          p_currency?: string;
+          p_method?: string;
+          p_payment_id: string;
+          p_rate?: number;
+          p_reference?: string;
+        };
+        Returns: undefined;
+      };
+      cancel_payment: { Args: { p_payment_id: string }; Returns: undefined };
       restaurant_pricing: { Args: { p_restaurant_id: string }; Returns: Json };
       request_item_change: {
         Args: { p_changes: Json; p_item_id: string; p_message: string };

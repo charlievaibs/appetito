@@ -16,6 +16,7 @@ export type Permission =
   | "orders.serve"
   | "orders.cancel"
   | "session.close"
+  | "payments.manage"
   | "tables.edit"
   | "menu.edit"
   | "settings.edit"
@@ -46,6 +47,7 @@ const PERMISSIONS: Record<Permission, readonly Role[]> = {
   "orders.serve": ["owner", "manager", "host", "waiter"],
   "orders.cancel": ["owner", "manager", "waiter", "kitchen"],
   "session.close": ["owner", "manager", "host", "waiter", "cashier"],
+  "payments.manage": ["owner", "manager", "host", "waiter", "cashier"],
   "tables.edit": ["owner", "manager", "host"],
   "menu.edit": ["owner", "manager"],
   "settings.edit": ["owner", "manager"],

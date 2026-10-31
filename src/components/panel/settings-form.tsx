@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import type { ChangePolicy, Identification, ManualJoin, OrderingMode, TableSecurity } from "@/lib/db";
 import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
+import { parsePaymentMethods, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentMethod } from "@/lib/payments";
 import { useBcvRates } from "@/lib/pricing";
 import { describeRate, formatPriceFor, type PriceDisplay, type RateSource } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
@@ -117,6 +118,8 @@ export function SettingsForm() {
   const [rateSource, setRateSource] = useState(restaurant.rate_source as RateSource);
   const [manualRate, setManualRate] = useState(restaurant.manual_rate?.toString() ?? "");
   const { rates: bcv } = useBcvRates();
+  const [methods, setMethods] = useState<PaymentMethod[]>(parsePaymentMethods(restaurant.payment_methods));
+  const [paymentInstructions, setPaymentInstructions] = useState(restaurant.payment_instructions ?? "");
   const [listed, setListed] = useState(restaurant.listed);
   const [description, setDescription] = useState(restaurant.description);
   const [city, setCity] = useState(restaurant.city ?? "");
@@ -166,6 +169,8 @@ export function SettingsForm() {
         change_policy: policy,
         manual_join: manualJoin,
         table_security: security,
+        payment_methods: methods,
+        payment_instructions: paymentInstructions.trim() || null,
         price_display: display,
         rate_source: rateSource,
         manual_rate: manual,
@@ -271,6 +276,38 @@ export function SettingsForm() {
           )}
         </>
       )}
+      <fieldset className={cardClass}>
+        <legend className="px-1 font-semibold">¿Cómo pueden pagar tus clientes?</legend>
+        <p className="text-sm text-muted">
+          Los comensales verán estos métodos en su cuenta y avisarán cuál usarán; tu equipo confirma el pago. Appetito no cobra: solo lo
+          registra. Si no marcas ninguno, se cobra en la mesa.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          {PAYMENT_METHODS.map((m) => (
+            <label key={m} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={methods.includes(m)}
+                onChange={(e) => setMethods(e.target.checked ? [...methods, m] : methods.filter((x) => x !== m))}
+              />
+              {PAYMENT_METHOD_LABEL[m]}
+            </label>
+          ))}
+        </div>
+        <label htmlFor="s-pay-info" className="mt-4 block text-sm font-medium">
+          Instrucciones de pago (opcional)
+        </label>
+        <textarea
+          id="s-pay-info"
+          rows={3}
+          maxLength={500}
+          placeholder="Pago móvil: Banco X · 0414-0000000 · V-12345678"
+          value={paymentInstructions}
+          onChange={(e) => setPaymentInstructions(e.target.value)}
+          className={`${inputClass} h-auto py-2`}
+        />
+        <p className="mt-1 text-xs text-muted">Se muestran al comensal cuando elige pagar, por ejemplo los datos de tu pago móvil.</p>
+      </fieldset>
       <Choices
         legend="¿Hasta cuándo se puede cambiar un plato?"
         name="policy"

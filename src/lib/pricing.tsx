@@ -16,11 +16,14 @@ type PricingValue = {
   format: (usdCents: number) => string;
   /** Qué tasa se está usando, para mostrarla en una nota; null si solo hay dólares. */
   rateNote: string | null;
+  /** Bolívares por dólar que se aplican ahora (aunque el local muestre solo dólares), o null si no se conoce. */
+  rate: number | null;
 };
 
 const PricingContext = createContext<PricingValue>({
   format: (cents) => formatPriceFor(cents, USD_ONLY, null),
   rateNote: null,
+  rate: null,
 });
 
 /** Tasa del BCV compartida por toda la página: se consulta una vez y se reutiliza unos minutos. */
@@ -61,7 +64,8 @@ export function useBcvRates(): { rates: BcvRates | null; loading: boolean } {
  * llega (o si no responde) se muestran dólares, nunca un importe inventado.
  */
 export function PricingProvider({ settings, children }: { settings: PricingSettings; children: ReactNode }) {
-  const needsBcv = settings.display !== "usd" && settings.source !== "manual";
+  // Se consulta el BCV si el local lo usa, incluso mostrando solo dólares: caja necesita la tasa para cobrar en bolívares.
+  const needsBcv = settings.source !== "manual";
   const [bcv, setBcv] = useState<BcvRates | null>(null);
 
   useEffect(() => {
@@ -77,10 +81,12 @@ export function PricingProvider({ settings, children }: { settings: PricingSetti
   }, [needsBcv]);
 
   const value = useMemo<PricingValue>(() => {
-    const rate = settings.display === "usd" ? null : pickRate(settings, bcv);
+    const rate = pickRate(settings, bcv);
+    const shownRate = settings.display === "usd" ? null : rate;
     return {
-      format: (cents) => formatPriceFor(cents, settings, rate),
-      rateNote: rate === null ? null : describeRate(settings, bcv),
+      format: (cents) => formatPriceFor(cents, settings, shownRate),
+      rateNote: shownRate === null ? null : describeRate(settings, bcv),
+      rate,
     };
   }, [settings, bcv]);
 

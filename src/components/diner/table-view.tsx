@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect } from "react";
 import { fetchSession, type SessionContext } from "@/lib/diner-api";
 import { clearSavedSession, loadSavedSession } from "@/lib/diner-session";
-import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
+import type { ChangeRequest, DishWithOptions, OrderItem, Payment, PaymentItem, ServiceRequest } from "@/lib/db";
+import { parsePaymentInfo, type PaymentMethod } from "@/lib/payments";
 import { PricingProvider } from "@/lib/pricing";
 import { parsePricingSettings, type PricingSettings } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
@@ -28,6 +29,11 @@ type TableData =
       joinCode: string | null;
       /** Cómo muestra sus precios este restaurante. */
       pricing: PricingSettings;
+      /** Cuenta: pagos de la mesa, los platos que cubre cada uno y cómo se puede pagar. */
+      payments: Payment[];
+      paymentItems: PaymentItem[];
+      paymentMethods: PaymentMethod[];
+      paymentInstructions: string | null;
     };
 
 /**
@@ -58,7 +64,7 @@ export function TableView() {
       return { kind: "closed", restaurantName: ctx.restaurant.name };
     }
 
-    const [dishes, items, requests, changeRequests, session, pricing] = await Promise.all([
+    const [dishes, items, requests, changeRequests, session, pricing, payments, paymentItems] = await Promise.all([
       supabase
         .from("dishes")
         .select("*, dish_option_groups(*, dish_options(*))")
@@ -70,7 +76,11 @@ export function TableView() {
       supabase.from("change_requests").select("*").eq("session_id", ctx.sessionId).order("created_at"),
       supabase.from("table_sessions").select("join_code").eq("id", ctx.sessionId).maybeSingle(),
       supabase.rpc("restaurant_pricing", { p_restaurant_id: ctx.restaurant.id }),
+      supabase.from("payments").select("*").eq("session_id", ctx.sessionId).order("created_at"),
+      supabase.from("payment_items").select("*").eq("session_id", ctx.sessionId),
     ]);
+    const pricingJson = unwrap(pricing);
+    const paymentInfo = parsePaymentInfo(pricingJson);
     return {
       kind: "open",
       userId,
@@ -80,7 +90,11 @@ export function TableView() {
       requests: unwrap(requests),
       changeRequests: unwrap(changeRequests),
       joinCode: unwrap(session)?.join_code ?? null,
-      pricing: parsePricingSettings(unwrap(pricing)),
+      pricing: parsePricingSettings(pricingJson),
+      payments: unwrap(payments),
+      paymentItems: unwrap(paymentItems),
+      paymentMethods: paymentInfo.methods,
+      paymentInstructions: paymentInfo.instructions,
     };
   }, []);
 
@@ -101,6 +115,11 @@ export function TableView() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_requests", filter: `session_id=eq.${sessionId}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payments", filter: `session_id=eq.${sessionId}` },
         () => void reload(),
       )
       .on(

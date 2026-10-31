@@ -15,6 +15,7 @@ import { smallButton } from "./styles";
 const links: { href: string; label: string; permission: Permission }[] = [
   { href: "/panel", label: "Pedidos", permission: "orders.view" },
   { href: "/panel/salon", label: "Salón", permission: "orders.take" },
+  { href: "/panel/caja", label: "Caja", permission: "payments.manage" },
   { href: "/panel/cocina", label: "Cocina", permission: "orders.kitchen" },
   { href: "/panel/nuevo-pedido", label: "Tomar pedido", permission: "orders.take" },
   { href: "/panel/mesas", label: "Mesas", permission: "tables.edit" },

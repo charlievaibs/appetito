@@ -10,6 +10,7 @@ import type { Json } from "./database.types";
 import type { ChangePolicy, Identification, OrderingMode } from "./db";
 import { describeError } from "./errors";
 import { getSupabase } from "./supabase";
+import type { PaymentMethod } from "./payments";
 import type { ServiceKind } from "./tags";
 
 /** Estado de una mesa abierta, con la configuración del restaurante. */
@@ -325,4 +326,64 @@ export async function joinWithInvite(
 /** Personal: confirma que hay gente en una mesa que se abrió con un escaneo. */
 export async function confirmSession(sessionId: string): Promise<void> {
   unwrapRpc(await getSupabase().rpc("confirm_session", { p_session_id: sessionId }));
+}
+
+/** Comensal: avisa que va a pagar estos platos; el personal lo confirma. Devuelve el id del pago. */
+export async function requestPayment(
+  sessionId: string,
+  itemIds: string[],
+  method: PaymentMethod,
+  options: { reference?: string; payerName?: string } = {},
+): Promise<string> {
+  const result = await getSupabase().rpc("request_payment", {
+    p_session_id: sessionId,
+    p_item_ids: itemIds,
+    p_method: method,
+    p_reference: options.reference,
+    p_payer_name: options.payerName,
+  });
+  return unwrapRpc(result);
+}
+
+/** Retira un pago propio mientras siga pendiente. */
+export async function cancelPayment(paymentId: string): Promise<void> {
+  unwrapRpc(await getSupabase().rpc("cancel_payment", { p_payment_id: paymentId }));
+}
+
+/** Personal: registra un cobro ya hecho. Sin lista de platos cobra todo lo pendiente. */
+export async function staffRecordPayment(
+  sessionId: string,
+  itemIds: string[] | null,
+  method: PaymentMethod,
+  options: { reference?: string; payerName?: string; currency?: "USD" | "VES"; rate?: number } = {},
+): Promise<string> {
+  const result = await getSupabase().rpc("staff_record_payment", {
+    p_session_id: sessionId,
+    // La función acepta null para «todo lo pendiente»; el tipo generado no lo refleja.
+    p_item_ids: itemIds as string[],
+    p_method: method,
+    p_reference: options.reference,
+    p_payer_name: options.payerName,
+    p_currency: options.currency,
+    p_rate: options.rate,
+  });
+  return unwrapRpc(result);
+}
+
+/** Personal: confirma (fijando cómo se pagó) o rechaza un pago pedido por un comensal. */
+export async function confirmPayment(
+  paymentId: string,
+  accept: boolean,
+  options: { method?: PaymentMethod; reference?: string; currency?: "USD" | "VES"; rate?: number } = {},
+): Promise<void> {
+  unwrapRpc(
+    await getSupabase().rpc("confirm_payment", {
+      p_payment_id: paymentId,
+      p_accept: accept,
+      p_method: options.method,
+      p_reference: options.reference,
+      p_currency: options.currency,
+      p_rate: options.rate,
+    }),
+  );
 }
