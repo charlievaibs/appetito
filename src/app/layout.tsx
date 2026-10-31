@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,6 +16,21 @@ export const metadata: Metadata = {
   title: "Appetito — Pide lo que se te antoja",
   description:
     "Explora el menú y arma tu pedido en un toque. Gratis, en la web y en Android.",
+  applicationName: "Appetito",
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    apple: "/icons/apple-touch-icon.png",
+  },
+  // iPhone: al añadirla a la pantalla de inicio se abre sin la barra de Safari.
+  appleWebApp: { capable: true, title: "Appetito", statusBarStyle: "default" },
+};
+
+// Color de la barra del sistema en el móvil (sigue el esquema claro/oscuro).
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fffaf5" },
+    { media: "(prefers-color-scheme: dark)", color: "#16100d" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

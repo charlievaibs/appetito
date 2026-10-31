@@ -7,6 +7,7 @@ import { fetchDirectory } from "@/lib/directory";
 import { loadSavedSession } from "@/lib/diner-session";
 import { formatDistance, getCurrentCoordinates, NEARBY_METERS, type Coordinates } from "@/lib/geo";
 import { useAsyncLoad } from "@/lib/use-async-load";
+import { InstallApp } from "./install-app";
 
 /**
  * Inicio de la app para comensales. Prioriza ahorrar clics:
@@ -43,6 +44,8 @@ export function DinerHome() {
           Entras al instante, sin crear cuenta, y puedes pedir y ajustar tu plato desde aquí.
         </p>
       </section>
+
+      <InstallApp />
 
       <Directory />
 
