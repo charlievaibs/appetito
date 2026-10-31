@@ -175,6 +175,26 @@ export async function updateItem(itemId: string, changes: ItemChanges): Promise<
   unwrapRpc(result);
 }
 
+/** Comensal: pide un cambio sobre un plato que cocina ya empezó; el mesero decide. */
+export async function requestItemChange(itemId: string, changes: ItemChanges, message: string): Promise<void> {
+  const payload: JsonObject = {};
+  if (changes.quantity !== undefined) payload.quantity = changes.quantity;
+  if (changes.optionIds !== undefined) payload.option_ids = changes.optionIds;
+  if (changes.note !== undefined) payload.note = changes.note;
+  const result = await getSupabase().rpc("request_item_change", {
+    p_item_id: itemId,
+    p_changes: payload,
+    p_message: message,
+  });
+  unwrapRpc(result);
+}
+
+/** Personal: acepta (aplica el cambio al plato) o rechaza una solicitud de cambio. */
+export async function resolveItemChange(requestId: string, accept: boolean): Promise<void> {
+  const result = await getSupabase().rpc("resolve_item_change", { p_request_id: requestId, p_accept: accept });
+  unwrapRpc(result);
+}
+
 /** Cambia el puesto o el nombre del comensal dentro de la mesa. */
 export async function updateParticipant(
   sessionId: string,

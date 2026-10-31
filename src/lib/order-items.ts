@@ -124,3 +124,33 @@ export function groupBy<T>(items: T[], key: (item: T) => string): [string, T[]][
   }
   return [...groups.entries()];
 }
+
+/** Estado visible, para el comensal, de la última solicitud de cambio de un plato. */
+export function latestRequestFor<T extends { item_id: string; created_at: string }>(
+  requests: T[],
+  itemId: string,
+): T | undefined {
+  return requests
+    .filter((r) => r.item_id === itemId)
+    .toSorted((a, b) => b.created_at.localeCompare(a.created_at))[0];
+}
+
+/**
+ * Resume en una frase lo que cambia entre el plato actual y lo que pide el comensal
+ * («Cantidad 2 → 1 · Sin: salsa · Nota: sin sal»). Es lo que lee el mesero al decidir.
+ */
+export function describeChange(
+  current: { quantity: number; note: string | null; optionNames: string[] },
+  next: { quantity: number; note: string; optionNames: string[] },
+): string {
+  if (next.quantity <= 0) return "Cancelar el plato";
+  const parts: string[] = [];
+  if (next.quantity !== current.quantity) parts.push(`Cantidad ${current.quantity} → ${next.quantity}`);
+  const added = next.optionNames.filter((n) => !current.optionNames.includes(n));
+  const removed = current.optionNames.filter((n) => !next.optionNames.includes(n));
+  if (added.length > 0) parts.push(`Agregar: ${added.join(", ")}`);
+  if (removed.length > 0) parts.push(`Quitar: ${removed.join(", ")}`);
+  const note = next.note.trim();
+  if (note !== (current.note ?? "").trim()) parts.push(note ? `Nota: ${note}` : "Quitar la nota");
+  return parts.join(" · ");
+}

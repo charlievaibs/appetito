@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
-import type { ItemStatus, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
+import type { ChangeRequest, ItemStatus, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { formatPrice } from "@/lib/money";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
@@ -68,9 +68,24 @@ export function OrdersBoard() {
   );
   const { data: requests, reload: reloadRequests } = useAsyncLoad(requestsLoader);
 
+  // Cambios que los comensales piden sobre platos que cocina ya empezó: el mesero decide.
+  const changesLoader = useCallback(
+    async (): Promise<ChangeRequest[]> =>
+      unwrap(
+        await getSupabase()
+          .from("change_requests")
+          .select("*")
+          .eq("restaurant_id", restaurant.id)
+          .eq("status", "pending")
+          .order("created_at"),
+      ),
+    [restaurant.id],
+  );
+  const { data: changes, reload: reloadChanges } = useAsyncLoad(changesLoader);
+
   const reload = useCallback(async () => {
-    await Promise.all([reloadSessions(), reloadRequests()]);
-  }, [reloadSessions, reloadRequests]);
+    await Promise.all([reloadSessions(), reloadRequests(), reloadChanges()]);
+  }, [reloadSessions, reloadRequests, reloadChanges]);
 
   // Tiempo real: platos, mesas y avisos del restaurante.
   useEffect(() => {
@@ -85,6 +100,11 @@ export function OrdersBoard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "table_sessions", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "change_requests", filter: `restaurant_id=eq.${restaurant.id}` },
         () => void reload(),
       )
       .on(
@@ -107,6 +127,12 @@ export function OrdersBoard() {
     setActionError(error ? describeError(error.message) : null);
     await reload();
   }
+
+  /** Acepta o rechaza un cambio pedido por un comensal (lanza si falla; se adapta al formato de run). */
+  const resolveItemChange = async (id: string, accept: boolean) => {
+    const { error } = await getSupabase().rpc("resolve_item_change", { p_request_id: id, p_accept: accept });
+    return { error };
+  };
 
   const setStatus = (ids: string[], status: ItemStatus) =>
     run(getSupabase().rpc("set_items_status", { p_item_ids: ids, p_status: status }));
@@ -160,6 +186,36 @@ export function OrdersBoard() {
               </button>
             </div>
           ))}
+        </section>
+      )}
+      {changes && changes.length > 0 && can(role, "orders.take") && (
+        <section aria-label="Cambios pedidos" className="mb-4 flex flex-col gap-2">
+          {changes.map((c) => {
+            const item = (sessions ?? []).flatMap((s) => s.order_items).find((i) => i.id === c.item_id);
+            const table = (sessions ?? []).find((s) => s.id === c.session_id)?.table_label ?? "Mesa";
+            return (
+              <div key={c.id} className="rounded-2xl border border-tomato/50 bg-tomato/10 px-4 py-3">
+                <p className="font-semibold">
+                  ✏️ {table}: {item ? `${item.quantity}× ${item.dish_name}` : "plato"}{" "}
+                  <span className="text-sm font-normal text-muted">(en preparación)</span>
+                </p>
+                <p className="mt-1 text-sm">{c.message}</p>
+                <p className="mt-1 text-xs text-muted">Consulta con cocina si todavía se puede.</p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-8 items-center rounded-full bg-tomato px-3 text-xs font-semibold text-white hover:bg-tomato-dark"
+                    onClick={() => void run(resolveItemChange(c.id, true))}
+                  >
+                    Aceptar cambio
+                  </button>
+                  <button type="button" className={smallButton} onClick={() => void run(resolveItemChange(c.id, false))}>
+                    No se puede
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </section>
       )}
       {ordered.length === 0 && !error && (

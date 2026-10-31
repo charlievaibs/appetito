@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { OptionGroup } from "./db";
 import {
   canDinerEdit,
+  describeChange,
   groupBy,
   isEditableStatus,
   itemsTotalCents,
+  latestRequestFor,
   optionsDeltaCents,
   parseOptions,
   validateSelection,
@@ -127,5 +129,35 @@ describe("groupBy", () => {
       ["a", ["a1", "a2"]],
       ["b", ["b1"]],
     ]);
+  });
+});
+
+describe("describeChange", () => {
+  const current = { quantity: 2, note: null, optionNames: ["Sin cebolla"] };
+
+  it("resume cantidad, opciones y nota", () => {
+    expect(
+      describeChange(current, { quantity: 1, note: "sin sal", optionNames: ["Sin salsa"] }),
+    ).toBe("Cantidad 2 → 1 · Agregar: Sin salsa · Quitar: Sin cebolla · Nota: sin sal");
+  });
+
+  it("devuelve vacío si no cambia nada", () => {
+    expect(describeChange(current, { quantity: 2, note: "", optionNames: ["Sin cebolla"] })).toBe("");
+  });
+
+  it("describe una cancelación", () => {
+    expect(describeChange(current, { quantity: 0, note: "", optionNames: [] })).toBe("Cancelar el plato");
+  });
+});
+
+describe("latestRequestFor", () => {
+  it("devuelve la solicitud más reciente de ese plato", () => {
+    const requests = [
+      { item_id: "a", created_at: "2026-01-01T10:00:00Z", id: 1 },
+      { item_id: "a", created_at: "2026-01-01T11:00:00Z", id: 2 },
+      { item_id: "b", created_at: "2026-01-01T12:00:00Z", id: 3 },
+    ];
+    expect(latestRequestFor(requests, "a")?.id).toBe(2);
+    expect(latestRequestFor(requests, "z")).toBeUndefined();
   });
 });

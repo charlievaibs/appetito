@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect } from "react";
 import { fetchSession, type SessionContext } from "@/lib/diner-api";
 import { clearSavedSession, loadSavedSession } from "@/lib/diner-session";
-import type { DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
+import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { OpenTable } from "./open-table";
@@ -20,6 +20,8 @@ type TableData =
       items: OrderItem[];
       /** Avisos al personal que siguen pendientes. */
       requests: ServiceRequest[];
+      /** Solicitudes de cambio de platos (pendientes y ya respondidas). */
+      changeRequests: ChangeRequest[];
     };
 
 /**
@@ -50,7 +52,7 @@ export function TableView() {
       return { kind: "closed", restaurantName: ctx.restaurant.name };
     }
 
-    const [dishes, items, requests] = await Promise.all([
+    const [dishes, items, requests, changeRequests] = await Promise.all([
       supabase
         .from("dishes")
         .select("*, dish_option_groups(*, dish_options(*))")
@@ -59,6 +61,7 @@ export function TableView() {
         .order("name"),
       supabase.from("order_items").select("*").eq("session_id", ctx.sessionId).order("created_at"),
       supabase.from("service_requests").select("*").eq("session_id", ctx.sessionId).is("resolved_at", null),
+      supabase.from("change_requests").select("*").eq("session_id", ctx.sessionId).order("created_at"),
     ]);
     return {
       kind: "open",
@@ -67,6 +70,7 @@ export function TableView() {
       dishes: unwrap(dishes),
       items: unwrap(items),
       requests: unwrap(requests),
+      changeRequests: unwrap(changeRequests),
     };
   }, []);
 
@@ -87,6 +91,11 @@ export function TableView() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "service_requests", filter: `session_id=eq.${sessionId}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "change_requests", filter: `session_id=eq.${sessionId}` },
         () => void reload(),
       )
       .on(

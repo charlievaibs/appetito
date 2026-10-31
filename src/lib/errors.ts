@@ -17,6 +17,8 @@ const MESSAGES: Record<string, string> = {
   dish_unavailable: "Este plato ya no está disponible.",
   invalid_items: "Agrega al menos un plato.",
   too_many_items: "Hay demasiados platos en esta mesa. Habla con tu mesero.",
+  edit_directly: "Este plato aún no está en preparación: puedes cambiarlo tú mismo.",
+  request_pending: "Ya pediste un cambio para este plato. Espera la respuesta del mesero.",
   invalid_kind: "Ese tipo de aviso no existe.",
   forbidden: "No tienes permiso para hacer esto.",
   last_owner: "El restaurante debe conservar al menos un dueño.",

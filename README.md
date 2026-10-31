@@ -5,8 +5,6 @@ Web instalable, gratis y pensada para móvil y tablet.
 
 **Web:** https://getappetito.vercel.app
 
-Inspirada en un proyecto universitario (Unimet) de menú y pedidos de restaurante; el código se reescribió desde cero.
-
 ## La idea
 
 Hay **un único pedido vivo por mesa** y el mesero y el comensal son dos formas igual de válidas de escribir en él.

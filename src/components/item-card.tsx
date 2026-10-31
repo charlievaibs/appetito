@@ -1,4 +1,4 @@
-import type { OrderItem } from "@/lib/db";
+import type { ChangeRequest, OrderItem } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
 import { lineTotalCents, parseOptions } from "@/lib/order-items";
 import { StatusBadge } from "./status-badge";
@@ -7,6 +7,10 @@ type Props = {
   item: OrderItem;
   /** Muestra el botón "Editar" (lo decide quien usa la tarjeta según permisos y estado). */
   onEdit?: () => void;
+  /** Botón "Pedir cambio" para un plato que cocina ya empezó (el mesero decide). */
+  onRequestChange?: () => void;
+  /** Última solicitud de cambio de este plato, para mostrar su estado. */
+  request?: ChangeRequest;
   /** Muestra a quién pertenece el plato (útil en la vista de toda la mesa). */
   showOwner?: boolean;
 };
@@ -15,7 +19,7 @@ type Props = {
  * Tarjeta de un plato pedido: cantidad, opciones elegidas, nota, estado y precio.
  * Es la misma para el comensal y para el personal.
  */
-export function ItemCard({ item, onEdit, showOwner = false }: Props) {
+export function ItemCard({ item, onEdit, onRequestChange, request, showOwner = false }: Props) {
   const options = parseOptions(item.options);
   const cancelled = item.status === "cancelled";
 
@@ -52,8 +56,28 @@ export function ItemCard({ item, onEdit, showOwner = false }: Props) {
         </p>
       )}
 
+      {request?.status === "pending" && (
+        <p role="status" className="mt-2 rounded-xl bg-tomato/10 px-3 py-2 text-sm">
+          ⏳ Pediste: {request.message}. Esperando la respuesta del mesero.
+        </p>
+      )}
+      {request?.status === "rejected" && (
+        <p className="mt-2 rounded-xl bg-line px-3 py-2 text-sm text-muted">
+          El mesero no pudo hacer este cambio ({request.message}). Si quieres, habla con él.
+        </p>
+      )}
+
       <div className="mt-3 flex items-center justify-between">
         <span className="font-bold text-tomato">{formatPrice(lineTotalCents(item))}</span>
+        {onRequestChange && !cancelled && request?.status !== "pending" && (
+          <button
+            type="button"
+            onClick={onRequestChange}
+            className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-medium hover:bg-line"
+          >
+            Pedir cambio
+          </button>
+        )}
         {onEdit && !cancelled && (
           <button
             type="button"

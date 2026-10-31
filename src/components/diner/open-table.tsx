@@ -8,6 +8,7 @@ import { ItemCard } from "@/components/item-card";
 import { MenuList } from "@/components/menu-list";
 import {
   addItems,
+  requestItemChange,
   requestService,
   resolveRequest,
   updateItem,
@@ -15,9 +16,17 @@ import {
   type SessionContext,
 } from "@/lib/diner-api";
 import { clearSavedSession } from "@/lib/diner-session";
-import type { DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
+import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
-import { canDinerEdit, groupBy, isOwnItem, itemsTotalCents } from "@/lib/order-items";
+import {
+  canDinerEdit,
+  describeChange,
+  groupBy,
+  isOwnItem,
+  itemsTotalCents,
+  latestRequestFor,
+  parseOptions,
+} from "@/lib/order-items";
 import { SERVICE_LABEL, type ServiceKind } from "@/lib/tags";
 
 type Props = {
@@ -27,21 +36,25 @@ type Props = {
     dishes: DishWithOptions[];
     items: OrderItem[];
     requests: ServiceRequest[];
+    changeRequests: ChangeRequest[];
   };
   reload: () => Promise<void>;
 };
 
 type Tab = "menu" | "mine" | "table";
 
-/** Lo que se está personalizando: un plato nuevo o uno ya pedido que se edita. */
-type Picking = { dish: DishWithOptions; editing?: OrderItem };
+/**
+ * Lo que se está personalizando: un plato nuevo, uno ya pedido que se edita, o un
+ * cambio que se le pide al mesero (`asRequest`) porque cocina ya empezó ese plato.
+ */
+type Picking = { dish: DishWithOptions; editing?: OrderItem; asRequest?: boolean };
 
 /**
  * La mesa del comensal ya abierta: menú para pedir, su pedido (editable mientras
  * la cocina no empiece) y lo que pide toda la mesa, todo sincronizado en vivo.
  */
 export function OpenTable({ data, reload }: Props) {
-  const { userId, ctx, dishes, items, requests } = data;
+  const { userId, ctx, dishes, items, requests, changeRequests } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
   const [picking, setPicking] = useState<Picking | null>(null);
@@ -54,7 +67,13 @@ export function OpenTable({ data, reload }: Props) {
 
   async function confirmPicker(values: PickerValues) {
     if (!picking) return;
-    const { dish, editing } = picking;
+    const { dish, editing, asRequest } = picking;
+    if (editing && asRequest) {
+      await sendChangeRequest(editing, dish, values);
+      setPicking(null);
+      await reload();
+      return;
+    }
     if (editing) {
       // Si el plato ya no tiene opciones configurables, no se tocan las que tenía.
       await updateItem(editing.id, {
@@ -70,14 +89,38 @@ export function OpenTable({ data, reload }: Props) {
     if (!editing) setTab("mine");
   }
 
+  /** Pide al mesero un cambio sobre un plato en preparación, con un resumen legible de lo que cambia. */
+  async function sendChangeRequest(item: OrderItem, dish: DishWithOptions, values: PickerValues) {
+    const names = (ids: string[]) =>
+      dish.dish_option_groups.flatMap((g) => g.dish_options).filter((opt) => ids.includes(opt.id)).map((opt) => opt.name);
+    const message =
+      describeChange(
+        { quantity: item.quantity, note: item.note, optionNames: parseOptions(item.options).map((opt) => opt.name) },
+        { quantity: values.quantity, note: values.note, optionNames: names(values.optionIds) },
+      ) || "Revisar este plato";
+    await requestItemChange(
+      item.id,
+      {
+        quantity: values.quantity,
+        note: values.note,
+        ...(dish.dish_option_groups.length > 0 ? { optionIds: values.optionIds } : {}),
+      },
+      message,
+    );
+  }
+
   async function removeItem() {
     if (!picking?.editing) return;
-    await updateItem(picking.editing.id, { quantity: 0 });
+    if (picking.asRequest) {
+      await requestItemChange(picking.editing.id, { quantity: 0 }, "Cancelar el plato");
+    } else {
+      await updateItem(picking.editing.id, { quantity: 0 });
+    }
     setPicking(null);
     await reload();
   }
 
-  function startEdit(item: OrderItem) {
+  function startEdit(item: OrderItem, asRequest = false) {
     // Si el plato salió del menú, se edita con una ficha mínima (cantidad y nota).
     const dish =
       dishes.find((d) => d.id === item.dish_id) ??
@@ -89,7 +132,7 @@ export function OpenTable({ data, reload }: Props) {
         price_cents: item.base_price_cents,
         dish_option_groups: [],
       } as unknown as DishWithOptions);
-    setPicking({ dish, editing: item });
+    setPicking({ dish, editing: item, asRequest });
   }
 
   function leaveTable() {
@@ -157,6 +200,13 @@ export function OpenTable({ data, reload }: Props) {
                 key={item.id}
                 item={item}
                 onEdit={canDinerEdit(item, editCtx) ? () => startEdit(item) : undefined}
+                request={latestRequestFor(changeRequests, item.id)}
+                // Si cocina ya empezó el plato, el cambio se le pide al mesero.
+                onRequestChange={
+                  canOrder && item.status === "preparing" && !canDinerEdit(item, editCtx)
+                    ? () => startEdit(item, true)
+                    : undefined
+                }
               />
             )}
             footer={
@@ -202,7 +252,7 @@ export function OpenTable({ data, reload }: Props) {
                 }
               : undefined
           }
-          confirmLabel={picking.editing ? "Guardar cambios" : "Agregar"}
+          confirmLabel={picking.asRequest ? "Pedir al mesero" : picking.editing ? "Guardar cambios" : "Agregar"}
           onConfirm={confirmPicker}
           onCancel={() => setPicking(null)}
           onRemove={picking.editing ? removeItem : undefined}

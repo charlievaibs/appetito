@@ -15,6 +15,56 @@ export type Database = {
   };
   public: {
     Tables: {
+      change_requests: {
+        Row: {
+          changes: Json;
+          created_at: string;
+          id: string;
+          item_id: string;
+          message: string;
+          requested_by: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          restaurant_id: string;
+          session_id: string;
+          status: string;
+        };
+        Insert: {
+          changes: Json;
+          created_at?: string;
+          id?: string;
+          item_id: string;
+          message: string;
+          requested_by?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id: string;
+          session_id: string;
+          status?: string;
+        };
+        Update: {
+          changes?: Json;
+          created_at?: string;
+          id?: string;
+          item_id?: string;
+          message?: string;
+          requested_by?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id?: string;
+          session_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "change_requests_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "order_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       dining_tables: {
         Row: {
           active: boolean;
@@ -542,6 +592,14 @@ export type Database = {
       request_service: {
         Args: { p_kind: string; p_session_id: string };
         Returns: string;
+      };
+      request_item_change: {
+        Args: { p_changes: Json; p_item_id: string; p_message: string };
+        Returns: string;
+      };
+      resolve_item_change: {
+        Args: { p_accept: boolean; p_request_id: string };
+        Returns: undefined;
       };
       resolve_request: { Args: { p_request_id: string }; Returns: undefined };
       revoke_invite: { Args: { p_invite_id: string }; Returns: undefined };
