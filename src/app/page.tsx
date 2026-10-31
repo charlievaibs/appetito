@@ -1,49 +1,34 @@
 import Link from "next/link";
 import { RELEASE, SIGNING_CERT_SHA256 } from "@/lib/release";
 
-const features = [
-  {
-    title: "Menú claro",
-    text: "Platos con foto, categorías y búsqueda para encontrar lo que se te antoja en segundos.",
-  },
-  {
-    title: "Pedido en un toque",
-    text: "Arma tu carrito, ajusta cantidades y confirma sin pantallas de más.",
-  },
-  {
-    title: "Siempre contigo",
-    text: "Úsalo desde el navegador o instálalo en tu Android. Tu carrito no se pierde.",
-  },
-];
-
 const steps = [
-  { n: "1", title: "Elige", text: "Explora el menú y abre el detalle de cada plato." },
-  { n: "2", title: "Arma tu pedido", text: "Agrega al carrito y ajusta las cantidades." },
-  { n: "3", title: "Disfruta", text: "Confirma el pedido y listo." },
+  { n: "1", title: "Entra a tu mesa", text: "Escanea el QR o acerca el móvil a la etiqueta NFC. Sin crear cuenta." },
+  { n: "2", title: "Pide a tu manera", text: "Elige del menú y ajusta tu plato: sin salsa, extra de queso…" },
+  { n: "3", title: "Cambia hasta que cocina empiece", text: "Tu pedido queda guardado y tu mesero lo ve en vivo." },
 ];
 
 export default function Home() {
   return (
     <>
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-5">
         <a href="#" className="text-xl font-bold tracking-tight text-tomato">
           appetito
         </a>
-        <nav className="flex gap-6 text-sm font-medium text-muted">
-          <a href="#funciones" className="hover:text-foreground">
-            Funciones
-          </a>
-          <a href="#como-funciona" className="hover:text-foreground">
+        <nav className="flex items-center gap-6 text-sm font-medium text-muted">
+          <a href="#como-funciona" className="hidden hover:text-foreground sm:inline">
             Cómo funciona
           </a>
-          <a href="#descargar" className="hover:text-foreground">
-            Descargar
+          <a href="#descargar" className="hidden hover:text-foreground sm:inline">
+            Instalar
           </a>
-          <Link href="/app" className="font-semibold text-tomato">
-            Abrir app
-          </Link>
-          <Link href="/panel" className="hover:text-foreground">
+          <Link href="/panel" className="hidden hover:text-foreground sm:inline">
             Soy un restaurante
+          </Link>
+          <Link
+            href="/app"
+            className="inline-flex h-10 items-center rounded-full bg-tomato px-5 font-semibold text-white hover:bg-tomato-dark"
+          >
+            Abrir app
           </Link>
         </nav>
       </header>
@@ -74,31 +59,11 @@ export default function Home() {
         </section>
 
         <section
-          id="funciones"
-          className="mx-auto w-full max-w-5xl scroll-mt-8 px-6 py-16"
-        >
-          <h2 className="text-center text-3xl font-bold tracking-tight">
-            Hecho para pedir sin vueltas
-          </h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-2xl border border-line bg-card p-6"
-              >
-                <h3 className="text-lg font-semibold">{f.title}</h3>
-                <p className="mt-2 text-muted">{f.text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section
           id="como-funciona"
           className="mx-auto w-full max-w-5xl scroll-mt-8 px-6 py-16"
         >
           <h2 className="text-center text-3xl font-bold tracking-tight">
-            Cómo funciona
+            Así de simple
           </h2>
           <ol className="mt-10 grid gap-6 sm:grid-cols-3">
             {steps.map((s) => (
@@ -147,7 +112,10 @@ export default function Home() {
       </main>
 
       <footer className="mx-auto w-full max-w-5xl px-6 py-8 text-center text-sm text-muted">
-        © 2026 Appetito
+        <Link href="/panel" className="underline">
+          ¿Tienes un restaurante? Entra al panel
+        </Link>
+        <p className="mt-2">© 2026 Appetito</p>
       </footer>
     </>
   );
