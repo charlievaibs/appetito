@@ -18,7 +18,8 @@ function serving(bytes: Uint8Array): typeof fetch {
 }
 
 describe.skipIf(!path)("APK real", () => {
-  const original = new Uint8Array(readFileSync(path ?? ""));
+  // describe.skipIf igualmente ejecuta este cuerpo: solo se lee el archivo si existe la ruta.
+  const original = path ? new Uint8Array(readFileSync(path)) : new Uint8Array();
   const release = { version: "1.0.0", sha256: createHash("sha256").update(original).digest("hex") };
 
   it("acepta el original", async () => {
