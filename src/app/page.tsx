@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const APK_URL = process.env.NEXT_PUBLIC_APK_URL;
 
 const features = [
@@ -38,6 +40,9 @@ export default function Home() {
           <a href="#descargar" className="hover:text-foreground">
             Descargar
           </a>
+          <Link href="/menu" className="font-semibold text-tomato">
+            Abrir app
+          </Link>
         </nav>
       </header>
 
@@ -57,12 +62,12 @@ export default function Home() {
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <DownloadButton />
-            <a
-              href="#como-funciona"
+            <Link
+              href="/menu"
               className="inline-flex h-12 items-center justify-center rounded-full border border-line px-6 font-medium transition-colors hover:bg-card"
             >
-              Ver cómo funciona
-            </a>
+              Abrir en el navegador
+            </Link>
           </div>
         </section>
 

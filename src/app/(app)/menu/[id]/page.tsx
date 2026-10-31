@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { AddToCart } from "@/components/add-to-cart";
 import { dishes, getDish } from "@/data/menu";
 import { formatPrice } from "@/lib/money";
@@ -20,17 +21,31 @@ export async function generateMetadata({
   };
 }
 
-export default async function DishPage({ params }: PageProps<"/menu/[id]">) {
-  const { id } = await params;
-  const dish = getDish(id);
-  if (!dish) notFound();
-
+export default function DishPage({ params }: PageProps<"/menu/[id]">) {
   return (
     <div className="mx-auto max-w-lg">
       <Link href="/menu" className="text-sm font-medium text-muted hover:text-foreground">
         ← Volver al menú
       </Link>
 
+      <Suspense
+        fallback={
+          <div className="mt-4 h-96 animate-pulse rounded-3xl bg-card" aria-hidden="true" />
+        }
+      >
+        <DishDetail params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function DishDetail({ params }: Pick<PageProps<"/menu/[id]">, "params">) {
+  const { id } = await params;
+  const dish = getDish(id);
+  if (!dish) notFound();
+
+  return (
+    <>
       <div className="mt-4 rounded-3xl border border-line bg-card p-6 sm:p-8">
         <div
           className="flex h-48 items-center justify-center rounded-2xl bg-tomato/10 text-8xl"
@@ -46,6 +61,6 @@ export default async function DishPage({ params }: PageProps<"/menu/[id]">) {
         </p>
         <AddToCart dish={dish} />
       </div>
-    </div>
+    </>
   );
 }
