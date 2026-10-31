@@ -76,9 +76,9 @@ npm run build
 
 ### Supabase
 
-1. Crea un proyecto y aplica el esquema (tablas, políticas y funciones). **Pendiente:** hoy el esquema vive solo en el
-   historial de migraciones del proyecto de Supabase (*Database → Migrations*); exportarlo a `supabase/migrations`
-   en este repositorio es el siguiente paso para poder recrearlo desde cero.
+1. Crea un proyecto y aplica, en orden, los archivos de [`supabase/migrations`](supabase/migrations)
+   (tablas, políticas y funciones; con la CLI: `supabase link` y `supabase db push`, o pega cada archivo en el SQL Editor).
+   Incluyen un restaurante de demostración con el slug `demo`.
 2. En *Authentication → Sign In / Providers* activa **Allow anonymous sign-ins** (los comensales entran como invitados).
 3. En *Authentication → URL Configuration* pon tu **Site URL** y añade tus direcciones a **Redirect URLs**.
 4. Copia la URL y la clave publicable a `.env.local`.
