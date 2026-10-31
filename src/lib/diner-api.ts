@@ -355,7 +355,7 @@ export async function staffRecordPayment(
   sessionId: string,
   itemIds: string[] | null,
   method: PaymentMethod,
-  options: { reference?: string; payerName?: string; currency?: "USD" | "VES"; rate?: number } = {},
+  options: { reference?: string; payerName?: string; currency?: "USD" | "VES"; rate?: number; received?: number } = {},
 ): Promise<string> {
   const result = await getSupabase().rpc("staff_record_payment", {
     p_session_id: sessionId,
@@ -366,6 +366,7 @@ export async function staffRecordPayment(
     p_payer_name: options.payerName,
     p_currency: options.currency,
     p_rate: options.rate,
+    p_received: options.received,
   });
   return unwrapRpc(result);
 }
@@ -374,7 +375,7 @@ export async function staffRecordPayment(
 export async function confirmPayment(
   paymentId: string,
   accept: boolean,
-  options: { method?: PaymentMethod; reference?: string; currency?: "USD" | "VES"; rate?: number } = {},
+  options: { method?: PaymentMethod; reference?: string; currency?: "USD" | "VES"; rate?: number; received?: number } = {},
 ): Promise<void> {
   unwrapRpc(
     await getSupabase().rpc("confirm_payment", {
@@ -384,6 +385,7 @@ export async function confirmPayment(
       p_reference: options.reference,
       p_currency: options.currency,
       p_rate: options.rate,
+      p_received: options.received,
     }),
   );
 }

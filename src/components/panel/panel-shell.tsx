@@ -104,7 +104,7 @@ function PanelShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <PricingProvider settings={parsePricingSettings(restaurant)}>
+      <PricingProvider settings={parsePricingSettings(restaurant)} audience="staff">
         <div className="mt-6">{children}</div>
         <RateNote className="mt-6 text-center print:hidden" />
       </PricingProvider>

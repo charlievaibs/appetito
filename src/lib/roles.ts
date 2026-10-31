@@ -34,10 +34,10 @@ export const ROLE_LABEL: Record<Role, string> = {
 export const ROLE_DESCRIPTION: Record<Role, string> = {
   owner: "Todo, incluido el equipo.",
   manager: "Menú, mesas, ajustes y equipo (menos dueños y gerentes).",
-  host: "Mesas, reservas, tomar pedidos y servir.",
-  waiter: "Tomar pedidos, enviarlos a cocina, servir y cerrar mesas.",
+  host: "Mesas, reservas, tomar pedidos, servir y cobrar.",
+  waiter: "Tomar pedidos, enviarlos a cocina, servir y cobrar. Cierra mesas solo si el local lo permite.",
   kitchen: "Ver pedidos, prepararlos y marcarlos listos.",
-  cashier: "Ver pedidos y cerrar mesas.",
+  cashier: "Cobrar, confirmar pagos, dar vuelto y cerrar mesas.",
 };
 
 const PERMISSIONS: Record<Permission, readonly Role[]> = {
@@ -69,4 +69,18 @@ export function assignableRoles(role: Role | null): Role[] {
 /** Convierte un texto en un rol válido; null si no lo es. */
 export function parseRole(value: unknown): Role | null {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value) ? (value as Role) : null;
+}
+
+/**
+ * ¿Puede este rol cerrar mesas en este local? Caja, gerente y dueño siempre; anfitrión y mesero solo si el
+ * local lo permite (locales pequeños sin caja). Replica `private.has_permission('session.close')`.
+ */
+export function canCloseTable(role: Role | null, tableClose: "cashier" | "staff"): boolean {
+  if (role === "owner" || role === "manager" || role === "cashier") return true;
+  return tableClose === "staff" && (role === "host" || role === "waiter");
+}
+
+/** ¿Puede cerrar una mesa con deuda (cortesía, error, cliente que se fue)? Solo caja, gerente y dueño. */
+export function canForceClose(role: Role | null): boolean {
+  return role === "owner" || role === "manager" || role === "cashier";
 }

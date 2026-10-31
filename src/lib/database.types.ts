@@ -392,6 +392,8 @@ export type Database = {
       };
       payments: {
         Row: {
+          cash_received_cents: number | null;
+          change_given_cents: number | null;
           amount_paid_cents: number;
           amount_usd_cents: number;
           created_at: string;
@@ -409,6 +411,8 @@ export type Database = {
           status: string;
         };
         Insert: {
+          cash_received_cents?: number | null;
+          change_given_cents?: number | null;
           amount_paid_cents: number;
           amount_usd_cents: number;
           created_at?: string;
@@ -426,6 +430,8 @@ export type Database = {
           status?: string;
         };
         Update: {
+          cash_received_cents?: number | null;
+          change_given_cents?: number | null;
           amount_paid_cents?: number;
           amount_usd_cents?: number;
           created_at?: string;
@@ -475,6 +481,9 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          menu_prices_visible: boolean;
+          price_label: string;
+          table_close: string;
           payment_instructions: string | null;
           payment_methods: string[];
           manual_rate: number | null;
@@ -498,6 +507,9 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          menu_prices_visible?: boolean;
+          price_label?: string;
+          table_close?: string;
           payment_instructions?: string | null;
           payment_methods?: string[];
           manual_rate?: number | null;
@@ -521,6 +533,9 @@ export type Database = {
           slug: string;
         };
         Update: {
+          menu_prices_visible?: boolean;
+          price_label?: string;
+          table_close?: string;
           payment_instructions?: string | null;
           payment_methods?: string[];
           manual_rate?: number | null;
@@ -675,6 +690,7 @@ export type Database = {
       };
       table_sessions: {
         Row: {
+          closed_unpaid_cents: number;
           confirmed: boolean;
           join_code: string;
           closed_at: string | null;
@@ -686,6 +702,7 @@ export type Database = {
           table_label: string;
         };
         Insert: {
+          closed_unpaid_cents?: number;
           confirmed?: boolean;
           join_code?: string;
           closed_at?: string | null;
@@ -697,6 +714,7 @@ export type Database = {
           table_label: string;
         };
         Update: {
+          closed_unpaid_cents?: number;
           confirmed?: boolean;
           join_code?: string;
           closed_at?: string | null;
@@ -754,6 +772,7 @@ export type Database = {
           p_method: string;
           p_payer_name?: string;
           p_rate?: number;
+          p_received?: number;
           p_reference?: string;
           p_session_id: string;
         };
@@ -766,6 +785,7 @@ export type Database = {
           p_method?: string;
           p_payment_id: string;
           p_rate?: number;
+          p_received?: number;
           p_reference?: string;
         };
         Returns: undefined;
@@ -795,7 +815,7 @@ export type Database = {
         };
         Returns: string[];
       };
-      close_session: { Args: { p_session_id: string }; Returns: undefined };
+      close_session: { Args: { p_force?: boolean; p_session_id: string }; Returns: undefined };
       create_restaurant: {
         Args: { p_name: string; p_slug: string };
         Returns: string;

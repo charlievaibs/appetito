@@ -20,7 +20,7 @@ type Props = {
  * Es la misma para el comensal y para el personal.
  */
 export function ItemCard({ item, onEdit, onRequestChange, request, showOwner = false }: Props) {
-  const { format } = usePricing();
+  const { formatMenu } = usePricing();
   const options = parseOptions(item.options);
   const cancelled = item.status === "cancelled";
 
@@ -69,7 +69,7 @@ export function ItemCard({ item, onEdit, onRequestChange, request, showOwner = f
       )}
 
       <div className="mt-3 flex items-center justify-between">
-        <span className="font-bold text-tomato">{format(lineTotalCents(item))}</span>
+        <span className="font-bold text-tomato">{formatMenu(lineTotalCents(item))}</span>
         {onRequestChange && !cancelled && request?.status !== "pending" && (
           <button
             type="button"

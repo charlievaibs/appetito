@@ -33,6 +33,9 @@ export type OrderingMode = "staff" | "qr_optional" | "qr";
 /** Seguridad de las mesas: el QR fijo abre mesas libres (casual) o solo el mesero las abre (strict). */
 export type TableSecurity = "casual" | "strict";
 
+/** Quién cierra las mesas: solo caja, gerente y dueño (cashier), o también anfitrión y mesero (staff). */
+export type TableClose = "cashier" | "staff";
+
 /** Cómo se identifica a cada comensal. */
 export type Identification = "table" | "seat" | "reservation";
 

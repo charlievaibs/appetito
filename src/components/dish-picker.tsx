@@ -25,7 +25,7 @@ type Props = {
  * por el comensal como por el mesero.
  */
 export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, onRemove }: Props) {
-  const { format } = usePricing();
+  const { formatMenu } = usePricing();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [quantity, setQuantity] = useState(initial?.quantity ?? 1);
   const [selected, setSelected] = useState<string[]>(initial?.optionIds ?? []);
@@ -121,8 +121,8 @@ export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, o
                         />
                         {option.name}
                       </span>
-                      {option.price_delta_cents > 0 && (
-                        <span className="text-sm text-muted">+{format(option.price_delta_cents)}</span>
+                      {option.price_delta_cents > 0 && formatMenu(option.price_delta_cents) !== null && (
+                        <span className="text-sm text-muted">+{formatMenu(option.price_delta_cents)}</span>
                       )}
                     </label>
                   ))}
@@ -177,7 +177,8 @@ export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, o
               disabled={busy}
               className="inline-flex h-11 items-center rounded-full bg-tomato px-5 font-semibold text-white hover:bg-tomato-dark disabled:opacity-50"
             >
-              {confirmLabel} · {format(unitCents * quantity)}
+              {confirmLabel}
+              {formatMenu(unitCents * quantity) !== null && ` · ${formatMenu(unitCents * quantity)}`}
             </button>
           </div>
         </div>

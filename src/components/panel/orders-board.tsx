@@ -7,7 +7,8 @@ import { describeError } from "@/lib/errors";
 import { usePricing } from "@/lib/pricing";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
-import { can } from "@/lib/roles";
+import { closeTable as closeTableRequest } from "@/lib/close-table";
+import { can, canCloseTable, canForceClose } from "@/lib/roles";
 import { getSupabase } from "@/lib/supabase";
 import { SERVICE_LABEL } from "@/lib/tags";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
@@ -172,7 +173,13 @@ export function OrdersBoard() {
 
   const closeTable = (session: SessionWithItems) => {
     if (!window.confirm(`¿Cerrar ${session.table_label}? Los comensales dejarán de poder pedir.`)) return;
-    void run(getSupabase().rpc("close_session", { p_session_id: session.id }));
+    void closeTableRequest((name, args) => getSupabase().rpc(name, args), session.id, {
+      canForce: canForceClose(role),
+      confirmForce: () => window.confirm(`${session.table_label} todavía tiene saldo sin cobrar. ¿Cerrarla igualmente? Quedará anotado como deuda.`),
+    }).then((message) => {
+      setActionError(message);
+      return reload();
+    });
   };
 
   const error = actionError ?? loadError;
@@ -308,7 +315,7 @@ export function OrdersBoard() {
                       Confirmar mesa
                     </button>
                   )}
-                  {can(role, "session.close") && (
+                  {canCloseTable(role, restaurant.table_close as "cashier" | "staff") && (
                     <button type="button" className={`${smallButton} mt-1`} onClick={() => closeTable(session)}>
                       Cerrar mesa
                     </button>

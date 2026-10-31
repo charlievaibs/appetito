@@ -77,10 +77,10 @@ Desde un local con una sola persona hasta uno grande. Cada rol ve y puede hacer 
 |---|---|
 | Dueño | Todo, incluido el equipo |
 | Gerente | Menú, mesas, ajustes y equipo (menos dueños y gerentes) |
-| Anfitrión | Mesas, reservas, tomar pedidos y servir |
-| Mesero | Tomar pedidos, enviarlos a cocina, servir y cerrar mesas; decide los cambios que piden los comensales |
+| Anfitrión | Mesas, reservas, tomar pedidos, servir y cobrar |
+| Mesero | Tomar pedidos, enviarlos a cocina, servir y cobrar; decide los cambios que piden los comensales. Cierra mesas solo si el local lo permite |
 | Cocina | Ver pedidos, prepararlos y marcarlos listos |
-| Caja | Ver pedidos y cerrar mesas |
+| Caja | Cobrar, confirmar pagos, dar vuelto en efectivo y cerrar mesas (también con deuda, si hace falta) |
 
 Se invita por correo desde `/panel/equipo`; la persona se une al entrar con ese correo **ya confirmado**
 (mantén activada la confirmación de correo en Supabase en producción).
@@ -118,6 +118,9 @@ ubicación aproximada (solo si la das; sugiere, nunca pide sola) → directorio.
 - **Hasta cuándo se cambia un plato:** hasta que cocina empiece, o hasta que esté listo.
 - **Elegir mesa a mano:** libres entran directo, con permiso del mesero o desactivado.
 - **Seguridad de mesa:** informal o estricto.
+- **Cómo se marcan los precios:** REF (divisa referenciada), dólar ($) o euro (€); dólares, bolívares o ambos con la tasa del BCV o la del local; con o sin precios en el menú.
+- **Cómo pueden pagar los clientes:** métodos aceptados e instrucciones (pago móvil, Zelle…).
+- **Quién cierra las mesas:** solo caja, gerente o dueño, o también anfitrión y mesero.
 
 ## Tecnologías
 

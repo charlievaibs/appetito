@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { ChangePolicy, Identification, ManualJoin, OrderingMode, TableSecurity } from "@/lib/db";
+import type { ChangePolicy, Identification, ManualJoin, OrderingMode, TableClose, TableSecurity } from "@/lib/db";
 import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { parsePaymentMethods, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentMethod } from "@/lib/payments";
 import { useBcvRates } from "@/lib/pricing";
-import { describeRate, formatPriceFor, type PriceDisplay, type RateSource } from "@/lib/rates";
+import { describeRate, formatPriceFor, type PriceDisplay, type PriceLabel, type PricingSettings, type RateSource } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton, smallButton } from "./styles";
 
@@ -91,6 +91,17 @@ const RATE_SOURCES: Choice<RateSource>[] = [
   { value: "manual", title: "La pongo yo", text: "Tú escribes la tasa y la actualizas cuando quieras. Útil si tu local usa otra referencia." },
 ];
 
+const LABELS: Choice<PriceLabel>[] = [
+  { value: "ref", title: "REF", text: "Precio referencial en divisa («REF 12.99»), como se acostumbra en Venezuela." },
+  { value: "usd", title: "Dólar ($)", text: "Los precios llevan el símbolo del dólar («$12.99»)." },
+  { value: "eur", title: "Euro (€)", text: "Los precios llevan el símbolo del euro («€12.99»). Usa también la tasa del euro." },
+];
+
+const TABLE_CLOSES: Choice<TableClose>[] = [
+  { value: "cashier", title: "Solo caja, gerente o dueño", text: "Una mesa se cierra desde caja cuando está saldada. Lo más ordenado si tienes caja." },
+  { value: "staff", title: "También anfitrión y mesero", text: "Para locales pequeños sin caja: quien atiende cierra la mesa cuando está saldada." },
+];
+
 const POLICIES: Choice<ChangePolicy>[] = [
   {
     value: "before_kitchen",
@@ -115,9 +126,14 @@ export function SettingsForm() {
   const [manualJoin, setManualJoin] = useState(restaurant.manual_join as ManualJoin);
   const [security, setSecurity] = useState(restaurant.table_security as TableSecurity);
   const [display, setDisplay] = useState(restaurant.price_display as PriceDisplay);
+  const [label, setLabel] = useState(restaurant.price_label as PriceLabel);
+  const [menuPrices, setMenuPrices] = useState(restaurant.menu_prices_visible);
+  const [tableClose, setTableClose] = useState(restaurant.table_close as TableClose);
   const [rateSource, setRateSource] = useState(restaurant.rate_source as RateSource);
   const [manualRate, setManualRate] = useState(restaurant.manual_rate?.toString() ?? "");
   const { rates: bcv } = useBcvRates();
+  /** Configuración de precios tal como quedaría, para el ejemplo en vivo. */
+  const preview: PricingSettings = { display, source: rateSource, manualRate: null, manualRateAt: null, label, menuPricesVisible: menuPrices };
   const [methods, setMethods] = useState<PaymentMethod[]>(parsePaymentMethods(restaurant.payment_methods));
   const [paymentInstructions, setPaymentInstructions] = useState(restaurant.payment_instructions ?? "");
   const [listed, setListed] = useState(restaurant.listed);
@@ -172,6 +188,9 @@ export function SettingsForm() {
         payment_methods: methods,
         payment_instructions: paymentInstructions.trim() || null,
         price_display: display,
+        price_label: label,
+        menu_prices_visible: menuPrices,
+        table_close: tableClose,
         rate_source: rateSource,
         manual_rate: manual,
         // La fecha solo cambia si cambió la tasa: así se sabe de cuándo es.
@@ -237,6 +256,26 @@ export function SettingsForm() {
         value={manualJoin}
         onChange={setManualJoin}
       />
+      <Choices
+        legend="¿Cómo se marcan los precios?"
+        name="price-label"
+        options={LABELS}
+        value={label}
+        onChange={(v) => {
+          setLabel(v);
+          // Si los precios están en euros, lo natural es convertir con la tasa del euro.
+          if (v === "eur" && rateSource === "bcv_usd") setRateSource("bcv_eur");
+        }}
+      />
+      <label className={`${cardClass} flex items-start gap-3 text-sm`}>
+        <input type="checkbox" className="mt-1" checked={menuPrices} onChange={(e) => setMenuPrices(e.target.checked)} />
+        <span>
+          <strong>Mostrar los precios en el menú</strong>
+          <span className="block text-muted">
+            Si lo desactivas, los comensales no ven precios al elegir y solo los ven en su cuenta, al pagar.
+          </span>
+        </span>
+      </label>
       <Choices legend="¿Cómo se muestran los precios?" name="price-display" options={DISPLAYS} value={display} onChange={setDisplay} />
       {display !== "usd" && (
         <>
@@ -260,14 +299,14 @@ export function SettingsForm() {
             </div>
           ) : (
             <p className="rounded-2xl border border-line bg-card p-4 text-sm text-muted">
-              {describeRate({ display, source: rateSource, manualRate: null, manualRateAt: null }, bcv) ??
+              {describeRate(preview, bcv) ??
                 "No pudimos consultar al BCV ahora mismo; mientras tanto se mostrarán dólares. Puedes usar «La pongo yo»."}
               {bcv && (
                 <>
                   {" "}
                   Ejemplo: un plato de $12,99 se verá{" "}
                   <strong className="text-foreground">
-                    {formatPriceFor(1299, { display, source: rateSource, manualRate: null, manualRateAt: null }, rateSource === "bcv_eur" ? bcv.eur : bcv.usd)}
+                    {formatPriceFor(1299, preview, rateSource === "bcv_eur" ? bcv.eur : bcv.usd)}
                   </strong>
                   .
                 </>
@@ -308,6 +347,7 @@ export function SettingsForm() {
         />
         <p className="mt-1 text-xs text-muted">Se muestran al comensal cuando elige pagar, por ejemplo los datos de tu pago móvil.</p>
       </fieldset>
+      <Choices legend="¿Quién cierra las mesas?" name="table-close" options={TABLE_CLOSES} value={tableClose} onChange={setTableClose} />
       <Choices
         legend="¿Hasta cuándo se puede cambiar un plato?"
         name="policy"

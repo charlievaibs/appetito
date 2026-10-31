@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignableRoles, can, parseRole, ROLES } from "./roles";
+import { assignableRoles, can, parseRole, ROLES, canCloseTable, canForceClose } from "./roles";
 
 describe("can", () => {
   it("el dueño y el gerente administran menú, ajustes y equipo", () => {
@@ -49,5 +49,28 @@ describe("parseRole", () => {
     expect(parseRole("waiter")).toBe("waiter");
     expect(parseRole("staff")).toBeNull();
     expect(parseRole(5)).toBeNull();
+  });
+});
+
+describe("cerrar mesas", () => {
+  it("en modo caja solo cierran caja, gerente y dueño", () => {
+    expect(canCloseTable("cashier", "cashier")).toBe(true);
+    expect(canCloseTable("owner", "cashier")).toBe(true);
+    expect(canCloseTable("waiter", "cashier")).toBe(false);
+    expect(canCloseTable("host", "cashier")).toBe(false);
+    expect(canCloseTable("kitchen", "cashier")).toBe(false);
+  });
+
+  it("los locales pequeños pueden dejar que cierre el mesero", () => {
+    expect(canCloseTable("waiter", "staff")).toBe(true);
+    expect(canCloseTable("host", "staff")).toBe(true);
+    expect(canCloseTable("kitchen", "staff")).toBe(false);
+    expect(canCloseTable(null, "staff")).toBe(false);
+  });
+
+  it("solo caja, gerente y dueño cierran con deuda", () => {
+    expect(canForceClose("cashier")).toBe(true);
+    expect(canForceClose("waiter")).toBe(false);
+    expect(canForceClose(null)).toBe(false);
   });
 });

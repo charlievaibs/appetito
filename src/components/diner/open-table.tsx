@@ -64,7 +64,7 @@ type Picking = { dish: DishWithOptions; editing?: OrderItem; asRequest?: boolean
  * la cocina no empiece) y lo que pide toda la mesa, todo sincronizado en vivo.
  */
 export function OpenTable({ data, reload }: Props) {
-  const { format } = usePricing();
+  const { formatMenu } = usePricing();
   const { userId, ctx, dishes, items, requests, changeRequests, joinCode, payments, paymentItems, paymentMethods, paymentInstructions } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
@@ -254,7 +254,7 @@ export function OpenTable({ data, reload }: Props) {
                   Después, avisa a tu mesero.
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  Tu total <span className="text-tomato">{format(itemsTotalCents(myItems))}</span>
+                  Tu total <span className="text-tomato">{formatMenu(itemsTotalCents(myItems)) ?? "se cobra al pagar"}</span>
                 </p>
               </>
             }
@@ -283,7 +283,7 @@ export function OpenTable({ data, reload }: Props) {
             renderItem={(item) => <ItemCard key={item.id} item={item} showOwner />}
             footer={
               <p className="text-lg font-bold">
-                Total de la mesa <span className="text-tomato">{format(itemsTotalCents(items))}</span>
+                Total de la mesa <span className="text-tomato">{formatMenu(itemsTotalCents(items)) ?? "se cobra al pagar"}</span>
               </p>
             }
           />
@@ -374,7 +374,7 @@ function ItemsSection({
   footer: React.ReactNode;
   groupKey?: (item: OrderItem) => string;
 }) {
-  const { format } = usePricing();
+  const { formatMenu } = usePricing();
   if (items.length === 0) {
     return <p className="py-10 text-center text-muted">{emptyText}</p>;
   }
@@ -386,7 +386,7 @@ function ItemsSection({
           {name && (
             <h2 className="mb-2 flex items-center justify-between font-semibold">
               {name}
-              <span className="text-sm font-normal text-muted">{format(itemsTotalCents(group))}</span>
+              <span className="text-sm font-normal text-muted">{formatMenu(itemsTotalCents(group))}</span>
             </h2>
           )}
           <div className="flex flex-col gap-3">{group.map(renderItem)}</div>

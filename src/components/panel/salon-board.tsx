@@ -5,7 +5,8 @@ import { InviteQr } from "@/components/invite-qr";
 import type { DiningTable, JoinRequest, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
-import { can } from "@/lib/roles";
+import { closeTable } from "@/lib/close-table";
+import { can, canCloseTable, canForceClose } from "@/lib/roles";
 import { getSupabase } from "@/lib/supabase";
 import { SERVICE_LABEL } from "@/lib/tags";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
@@ -158,7 +159,8 @@ export function SalonBoard() {
           services={services}
           joins={joins.filter((j) => j.table_id === selected.id)}
           canOpen={can(role, "orders.take")}
-          canClose={can(role, "session.close")}
+          canClose={canCloseTable(role, restaurant.table_close as "cashier" | "staff")}
+          canForce={canForceClose(role)}
           run={run}
         />
       )}
@@ -174,6 +176,7 @@ function TablePanel({
   joins,
   canOpen,
   canClose,
+  canForce,
   run,
 }: {
   table: DiningTable;
@@ -182,6 +185,7 @@ function TablePanel({
   joins: JoinRequest[];
   canOpen: boolean;
   canClose: boolean;
+  canForce: boolean;
   run: (action: PromiseLike<{ error: { message: string } | null }>) => Promise<void>;
 }) {
   const supabase = getSupabase();
@@ -289,7 +293,12 @@ function TablePanel({
               className={`${smallButton} text-red-600`}
               onClick={() => {
                 if (window.confirm(`¿Cerrar ${table.label}? Los comensales dejarán de poder pedir.`)) {
-                  void run(supabase.rpc("close_session", { p_session_id: session.id }));
+                  void run(
+                    closeTable((name, args) => supabase.rpc(name, args), session.id, {
+                      canForce,
+                      confirmForce: () => window.confirm(`${table.label} todavía tiene saldo sin cobrar. ¿Cerrarla igualmente? Quedará anotado como deuda.`),
+                    }).then((message) => ({ error: message ? { message } : null })),
+                  );
                 }
               }}
             >

@@ -14,6 +14,16 @@ import {
 const bcv: BcvRates = { usd: 889.5754, eur: 991.25386822, date: "2026-11-02" };
 const base = (patch: Partial<PricingSettings>): PricingSettings => ({ ...USD_ONLY, ...patch });
 
+describe("parsePricingSettings (etiqueta y menú)", () => {
+  it("lee la etiqueta y si el menú muestra precios", () => {
+    expect(parsePricingSettings({ price_label: "eur", menu_prices_visible: false })).toMatchObject({ label: "eur", menuPricesVisible: false });
+  });
+
+  it("por defecto usa REF y muestra los precios", () => {
+    expect(parsePricingSettings({ price_display: "both" })).toMatchObject({ label: "ref", menuPricesVisible: true });
+  });
+});
+
 describe("parsePricingSettings", () => {
   it("lee la configuración del local", () => {
     expect(parsePricingSettings({ price_display: "both", rate_source: "manual", manual_rate: "900.5", manual_rate_at: "2026-11-02T10:00:00Z" })).toEqual({
@@ -21,6 +31,8 @@ describe("parsePricingSettings", () => {
       source: "manual",
       manualRate: 900.5,
       manualRateAt: "2026-11-02T10:00:00Z",
+      label: "ref",
+      menuPricesVisible: true,
     });
   });
 
@@ -58,7 +70,13 @@ describe("formatPriceFor", () => {
     expect(formatPriceFor(1299, base({ display: "both" }), 889.5754)).toBe("$12.99 · Bs 11.555,58");
   });
 
-  it("sin tasa se queda en dólares", () => {
+  it("marca el precio como REF, dólar o euro", () => {
+    expect(formatPriceFor(1299, base({ label: "ref" }), null)).toBe("REF 12.99");
+    expect(formatPriceFor(1299, base({ label: "eur" }), null)).toBe("€12.99");
+    expect(formatPriceFor(1299, base({ label: "ref", display: "both" }), 889.5754)).toBe("REF 12.99 · Bs 11.555,58");
+  });
+
+  it("sin tasa se queda en la moneda base", () => {
     expect(formatPriceFor(1299, base({ display: "ves" }), null)).toBe("$12.99");
   });
 });

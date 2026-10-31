@@ -7,6 +7,9 @@
 export type PriceDisplay = "usd" | "ves" | "both";
 export type RateSource = "bcv_usd" | "bcv_eur" | "manual";
 
+/** Cómo se marcan los precios: REF (divisa referenciada, lo habitual en Venezuela), dólar ($) o euro (€). */
+export type PriceLabel = "ref" | "usd" | "eur";
+
 /** Cómo muestra los precios un restaurante. */
 export type PricingSettings = {
   display: PriceDisplay;
@@ -14,6 +17,10 @@ export type PricingSettings = {
   /** Bolívares por dólar fijados a mano por el local (solo con `source = "manual"`). */
   manualRate: number | null;
   manualRateAt: string | null;
+  /** Símbolo con el que se marca cada precio. */
+  label: PriceLabel;
+  /** Si los comensales ven los precios en el menú; si no, solo en la cuenta al cobrar. */
+  menuPricesVisible: boolean;
 };
 
 /** Tasas oficiales del BCV (bolívares por unidad). */
@@ -26,7 +33,14 @@ export type BcvRates = {
   source?: "bcv" | "dolarapi";
 };
 
-export const USD_ONLY: PricingSettings = { display: "usd", source: "bcv_usd", manualRate: null, manualRateAt: null };
+export const USD_ONLY: PricingSettings = {
+  display: "usd",
+  source: "bcv_usd",
+  manualRate: null,
+  manualRateAt: null,
+  label: "usd",
+  menuPricesVisible: true,
+};
 
 const RATE_SOURCE_LABEL: Record<RateSource, string> = {
   bcv_usd: "BCV dólar",
@@ -37,7 +51,7 @@ const RATE_SOURCE_LABEL: Record<RateSource, string> = {
 /** Lee la configuración de precios que devuelven las funciones de la base de datos. */
 export function parsePricingSettings(json: unknown): PricingSettings {
   if (typeof json !== "object" || json === null || Array.isArray(json)) return USD_ONLY;
-  const { price_display, rate_source, manual_rate, manual_rate_at } = json as Record<string, unknown>;
+  const { price_display, rate_source, manual_rate, manual_rate_at, price_label, menu_prices_visible } = json as Record<string, unknown>;
   const display: PriceDisplay = price_display === "ves" || price_display === "both" ? price_display : "usd";
   const source: RateSource = rate_source === "bcv_eur" || rate_source === "manual" ? rate_source : "bcv_usd";
   const manualRate = typeof manual_rate === "number" ? manual_rate : typeof manual_rate === "string" ? Number(manual_rate) : null;
@@ -46,6 +60,8 @@ export function parsePricingSettings(json: unknown): PricingSettings {
     source,
     manualRate: manualRate !== null && Number.isFinite(manualRate) && manualRate > 0 ? manualRate : null,
     manualRateAt: typeof manual_rate_at === "string" ? manual_rate_at : null,
+    label: price_label === "usd" || price_label === "eur" ? price_label : "ref",
+    menuPricesVisible: menu_prices_visible !== false,
   };
 }
 
@@ -69,7 +85,13 @@ export function toVesCents(usdCents: number, rate: number): number {
   return Math.round(usdCents * rate);
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const amount = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Un importe en la moneda base marcado como quiera el local: "REF 12.99", "$12.99" o "€12.99". */
+export function formatBase(cents: number, label: PriceLabel): string {
+  const value = amount.format(cents / 100);
+  return label === "usd" ? "$" + value : label === "eur" ? "€" + value : "REF " + value;
+}
 const ves = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** "Bs 11.558,00" */
@@ -82,9 +104,10 @@ export function formatVes(vesCents: number): string {
  * inventa un importe en bolívares).
  */
 export function formatPriceFor(usdCents: number, settings: PricingSettings, rate: number | null): string {
-  if (settings.display === "usd" || rate === null) return usd.format(usdCents / 100);
+  const base = formatBase(usdCents, settings.label);
+  if (settings.display === "usd" || rate === null) return base;
   const bs = formatVes(toVesCents(usdCents, rate));
-  return settings.display === "ves" ? bs : `${usd.format(usdCents / 100)} · ${bs}`;
+  return settings.display === "ves" ? bs : `${base} · ${bs}`;
 }
 
 /** Texto corto para explicar qué tasa se está usando ("BCV dólar: Bs 889,57 · 02/11/2026"). */

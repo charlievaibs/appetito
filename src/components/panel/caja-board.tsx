@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { confirmPayment, staffRecordPayment } from "@/lib/diner-api";
-import type { OrderItem, Payment, PaymentItem, TableSession } from "@/lib/db";
+import type { OrderItem, Payment, PaymentItem, ServiceRequest, TableSession } from "@/lib/db";
 import { parsePaymentMethods, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, billTotals, coverage, needsReference, payableRows, selectionTotal, type PaymentMethod } from "@/lib/payments";
 import { usePricing } from "@/lib/pricing";
-import { useRestaurant } from "@/lib/panel-context";
-import { vesFor } from "@/lib/rates";
+import { closeTable } from "@/lib/close-table";
+import { parseMoneyInput } from "@/lib/money-input";
+import { usePanel, useRestaurant } from "@/lib/panel-context";
+import { canCloseTable, canForceClose } from "@/lib/roles";
+import { toVesCents, vesFor } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { cardClass, inputClass, smallButton } from "./styles";
 
 type Session = TableSession & { order_items: OrderItem[] };
-type CajaData = { sessions: Session[]; payments: Payment[]; paymentItems: PaymentItem[] };
+type CajaData = { sessions: Session[]; payments: Payment[]; paymentItems: PaymentItem[]; billCalls: ServiceRequest[] };
 
 const METHOD_LABEL = (m: string) => PAYMENT_METHOD_LABEL[m as PaymentMethod] ?? m;
 
@@ -23,6 +26,7 @@ const METHOD_LABEL = (m: string) => PAYMENT_METHOD_LABEL[m as PaymentMethod] ?? 
 export function CajaBoard() {
   const restaurant = useRestaurant();
   const { format, rate } = usePricing();
+  const { role } = usePanel();
   const methods = parsePaymentMethods(restaurant.payment_methods);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -31,14 +35,16 @@ export function CajaBoard() {
     const supabase = getSupabase();
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    const [sessions, payments, paymentItems] = await Promise.all([
+    const [sessions, payments, paymentItems, billCalls] = await Promise.all([
       supabase.from("table_sessions").select("*, order_items(*)").eq("restaurant_id", restaurant.id).eq("status", "open").order("opened_at"),
       supabase.from("payments").select("*").eq("restaurant_id", restaurant.id).gte("created_at", startOfDay.toISOString()).order("created_at"),
       supabase.from("payment_items").select("*, payments!inner(restaurant_id, status)").eq("payments.restaurant_id", restaurant.id).in("payments.status", ["pending", "confirmed"]),
+      supabase.from("service_requests").select("*").eq("restaurant_id", restaurant.id).eq("kind", "bill").is("resolved_at", null),
     ]);
     return {
       sessions: unwrap(sessions) as Session[],
       payments: unwrap(payments),
+      billCalls: unwrap(billCalls),
       paymentItems: unwrap(paymentItems).map(({ payment_id, item_id, session_id, amount_usd_cents }) => ({ payment_id, item_id, session_id, amount_usd_cents })),
     };
   }, [restaurant.id]);
@@ -72,7 +78,7 @@ export function CajaBoard() {
   }
 
   if (!data && !(error ?? loadError)) return <div className="h-40 animate-pulse rounded-2xl bg-card" aria-hidden="true" />;
-  const { sessions, payments, paymentItems } = data ?? { sessions: [], payments: [], paymentItems: [] };
+  const { sessions, payments, paymentItems, billCalls } = data ?? { sessions: [], payments: [], paymentItems: [], billCalls: [] };
 
   const pending = payments.filter((p) => p.status === "pending");
   const confirmedToday = payments.filter((p) => p.status === "confirmed");
@@ -132,11 +138,17 @@ export function CajaBoard() {
           const rows = coverage(s.order_items, paymentItems.filter((pi) => pi.session_id === s.id), payments.filter((p) => p.session_id === s.id));
           const totals = billTotals(rows);
           const open = openId === s.id;
+          const askedBill = billCalls.some((c) => c.session_id === s.id);
+          const settled = totals.remaining === 0 && totals.pending === 0;
+          const mayClose = canCloseTable(role, restaurant.table_close as "cashier" | "staff");
           return (
             <article key={s.id} className={cardClass}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h3 className="font-bold">{s.table_label}</h3>
+                  <h3 className="font-bold">
+                    {s.table_label}
+                    {askedBill && <span className="ml-2 rounded-full bg-tomato px-2 py-0.5 text-xs font-medium text-white">🧾 pidió la cuenta</span>}
+                  </h3>
                   <p className="text-sm text-muted">
                     Total {format(totals.total)} · pagado {format(totals.paid)}
                     {totals.pending > 0 && ` · por confirmar ${format(totals.pending)}`}
@@ -149,6 +161,25 @@ export function CajaBoard() {
               {payableRows(rows).length > 0 && methods.length > 0 && (
                 <button type="button" className={`${smallButton} mt-3`} onClick={() => setOpenId(open ? null : s.id)}>
                   {open ? "Cerrar cobro" : "Cobrar"}
+                </button>
+              )}
+              {mayClose && (
+                <button
+                  type="button"
+                  className={`${smallButton} ml-2 mt-3 ${settled ? "" : "text-red-600"}`}
+                  onClick={() =>
+                    void run(
+                      closeTable((name, args) => getSupabase().rpc(name, args), s.id, {
+                        canForce: canForceClose(role),
+                        confirmForce: () =>
+                          window.confirm(`${s.table_label} todavía tiene ${format(totals.remaining + totals.pending)} sin cobrar. ¿Cerrarla igualmente? Quedará anotado como deuda.`),
+                      }).then((message) => {
+                        if (message) throw new Error(message);
+                      }),
+                    )
+                  }
+                >
+                  {settled ? "Cerrar mesa" : "Cerrar con deuda"}
                 </button>
               )}
               {open && <ChargeForm session={s} rows={rows} methods={methods} rate={rate} run={run} onDone={() => setOpenId(null)} />}
@@ -166,7 +197,10 @@ function PendingPayment({ payment, table, rate, run }: { payment: Payment; table
   const [method, setMethod] = useState(payment.method as PaymentMethod);
   const [currency, setCurrency] = useState<"USD" | "VES">("USD");
   const [reference, setReference] = useState(payment.reference ?? "");
+  const [received, setReceived] = useState("");
   const bs = vesFor(payment.amount_usd_cents, rate);
+  const due = currency === "VES" && rate !== null ? toVesCents(payment.amount_usd_cents, rate) : payment.amount_usd_cents;
+  const cash = method === "cash" ? cashChange(received, due) : null;
 
   return (
     <div className="rounded-2xl border border-tomato/50 bg-tomato/10 px-4 py-3">
@@ -195,12 +229,24 @@ function PendingPayment({ payment, table, rate, run }: { payment: Payment; table
         {needsReference(method) && (
           <input aria-label="Referencia" placeholder="Referencia" value={reference} onChange={(e) => setReference(e.target.value)} className="h-9 rounded-xl border border-line bg-background px-3 text-sm" />
         )}
+        {method === "cash" && <CashFields currency={currency} due={due} value={received} onChange={setReceived} />}
       </div>
       <div className="mt-2 flex gap-2">
         <button
           type="button"
           className="inline-flex h-8 items-center rounded-full bg-tomato px-3 text-xs font-semibold text-white hover:bg-tomato-dark"
-          onClick={() => void run(confirmPayment(payment.id, true, { method, reference, currency, rate: currency === "VES" ? (rate ?? undefined) : undefined }))}
+          disabled={cash !== null && cash.short}
+          onClick={() =>
+            void run(
+              confirmPayment(payment.id, true, {
+                method,
+                reference,
+                currency,
+                rate: currency === "VES" ? (rate ?? undefined) : undefined,
+                received: cash?.received ?? undefined,
+              }),
+            )
+          }
         >
           Confirmar pago
         </button>
@@ -235,8 +281,11 @@ function ChargeForm({
   const [currency, setCurrency] = useState<"USD" | "VES">("USD");
   const [reference, setReference] = useState("");
   const [payer, setPayer] = useState("");
+  const [received, setReceived] = useState("");
   const total = selectionTotal(rows, selected);
   const bs = vesFor(total, rate);
+  const due = currency === "VES" && rate !== null ? toVesCents(total, rate) : total;
+  const cash = method === "cash" ? cashChange(received, due) : null;
 
   function toggle(id: string) {
     const next = new Set(selected);
@@ -279,10 +328,11 @@ function ChargeForm({
           <input aria-label="Referencia" placeholder="Referencia" value={reference} onChange={(e) => setReference(e.target.value)} className={`${inputClass} h-10`} />
         )}
         <input aria-label="Quién paga" placeholder="Quién paga (opcional)" value={payer} onChange={(e) => setPayer(e.target.value)} className={`${inputClass} h-10`} />
+        {method === "cash" && <CashFields currency={currency} due={due} value={received} onChange={setReceived} />}
       </div>
       <button
         type="button"
-        disabled={selected.size === 0 || total === 0}
+        disabled={selected.size === 0 || total === 0 || (cash !== null && cash.short)}
         className="mt-3 h-11 w-full rounded-full bg-tomato font-semibold text-white hover:bg-tomato-dark disabled:opacity-50"
         onClick={() =>
           void run(
@@ -291,6 +341,7 @@ function ChargeForm({
               payerName: payer || undefined,
               currency,
               rate: currency === "VES" ? (rate ?? undefined) : undefined,
+              received: cash?.received ?? undefined,
             }).then(onDone),
           )
         }
@@ -298,6 +349,43 @@ function ChargeForm({
         Registrar cobro de {format(total)}
         {currency === "VES" && bs ? ` · ${bs}` : ""}
       </button>
+    </div>
+  );
+}
+
+/** Efectivo recibido y vuelto. `received` va en céntimos de la moneda del cobro; `short` indica que no alcanza. */
+function cashChange(input: string, due: number): { received: number | null; change: number; short: boolean } | null {
+  if (input.trim() === "") return { received: null, change: 0, short: false };
+  const received = parseMoneyInput(input);
+  if (received === null) return { received: null, change: 0, short: true };
+  return { received, change: received - due, short: received < due };
+}
+
+/** Campo «efectivo recibido» con el vuelto a entregar, para no equivocarse al dar el cambio. */
+function CashFields({ currency, due, value, onChange }: { currency: "USD" | "VES"; due: number; value: string; onChange: (v: string) => void }) {
+  const { formatIn } = usePricing();
+  const cash = cashChange(value, due);
+  return (
+    <div className="sm:col-span-2">
+      <label className="text-xs font-medium">
+        Efectivo recibido ({currency === "VES" ? "Bs" : "divisa"}) · a cobrar {formatIn(currency, due)}
+        <input
+          inputMode="decimal"
+          placeholder={`Por ejemplo ${(due / 100).toFixed(2)}`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="mt-1 h-9 w-full rounded-xl border border-line bg-background px-3 text-sm"
+        />
+      </label>
+      {cash && value.trim() !== "" && (
+        <p role="status" className={`mt-1 text-sm font-semibold ${cash.short ? "text-red-600" : "text-green-600"}`}>
+          {cash.received === null
+            ? "Escribe un importe válido."
+            : cash.short
+              ? `Falta ${formatIn(currency, due - cash.received)}`
+              : `Vuelto a entregar: ${formatIn(currency, cash.change)}`}
+        </p>
+      )}
     </div>
   );
 }
