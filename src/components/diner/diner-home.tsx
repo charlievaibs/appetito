@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { fetchDirectory } from "@/lib/directory";
+import { fetchDirectory, type DirectoryRestaurant } from "@/lib/directory";
 import { loadSavedSession } from "@/lib/diner-session";
 import { formatDistance, getCurrentCoordinates, NEARBY_METERS, type Coordinates } from "@/lib/geo";
 import { useAsyncLoad } from "@/lib/use-async-load";
+import { AccountBar } from "./account-bar";
 import { InstallApp } from "./install-app";
+import { QrScanner } from "./qr-scanner";
 
 /**
  * Inicio de la app para comensales. Prioriza ahorrar clics:
  * 1. Si ya hay una mesa recordada en este dispositivo, va directo a ella.
- * 2. Si no, explica cómo entrar (NFC o QR de la mesa) y muestra el directorio,
- *    con la opción de ordenarlo por cercanía.
+ * 2. Si no: cuenta opcional (entrar / crear cuenta / Google), escanear la etiqueta de
+ *    la mesa como acción principal, restaurantes cercanos en una lista desplegable y,
+ *    al final, el directorio completo.
  */
 export function DinerHome() {
   const router = useRouter();
@@ -36,20 +39,12 @@ export function DinerHome() {
   }
 
   return (
-    <div>
-      <section className="rounded-3xl bg-tomato px-6 py-8 text-white">
-        <h1 className="text-2xl font-bold tracking-tight">¿Ya estás en tu mesa?</h1>
-        <p className="mt-2 text-white/90">
-          Acerca tu móvil a la etiqueta <strong>NFC</strong> de tu mesa o escanea su <strong>QR</strong>.
-          Entras al instante, sin crear cuenta, y puedes pedir y ajustar tu plato desde aquí.
-        </p>
-      </section>
-
+    <div className="flex flex-col gap-4">
+      <AccountBar />
+      <ScanCard />
+      <Browse />
       <InstallApp />
-
-      <Directory />
-
-      <p className="mt-10 text-center text-sm text-muted">
+      <p className="mt-6 text-center text-sm text-muted">
         ¿Eres del restaurante?{" "}
         <Link href="/panel" className="font-semibold text-tomato underline">
           Entra al panel
@@ -59,8 +54,45 @@ export function DinerHome() {
   );
 }
 
-/** Lista de restaurantes con botón "Cerca de mí" (la ubicación solo se pide al pulsarlo). */
-function Directory() {
+/** Acción principal: escanear el QR (o acercar el móvil a la etiqueta NFC) de la mesa. */
+function ScanCard() {
+  const router = useRouter();
+  const [scanning, setScanning] = useState(false);
+
+  // Estable a propósito: el escáner reinicia la cámara si esta función cambia.
+  const onFound = useCallback(
+    (tag: { token: string; action: "waiter" | "bill" | null }) => {
+      setScanning(false);
+      const query = tag.action ? `?a=${tag.action === "waiter" ? "mesero" : "cuenta"}` : "";
+      router.push(`/m/${tag.token}${query}`);
+    },
+    [router],
+  );
+
+  return (
+    <section className="rounded-3xl bg-tomato px-6 py-7 text-white">
+      <h1 className="text-2xl font-bold tracking-tight">¿Ya estás en tu mesa?</h1>
+      <p className="mt-2 text-white/90">
+        Escanea el <strong>QR</strong> o acerca tu móvil a la etiqueta <strong>NFC</strong>. Entras al
+        instante, sin crear cuenta, y puedes pedir y ajustar tu plato desde aquí.
+      </p>
+      <button
+        type="button"
+        onClick={() => setScanning(true)}
+        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-full bg-white font-semibold text-tomato-dark transition-transform active:scale-[0.98]"
+      >
+        📷 Escanear QR de la mesa
+      </button>
+      {scanning && <QrScanner onFound={onFound} onClose={() => setScanning(false)} />}
+    </section>
+  );
+}
+
+/**
+ * Cómo encontrar el restaurante sin etiqueta: lista desplegable con los más cercanos
+ * (tras dar permiso de ubicación) y, debajo, el directorio completo.
+ */
+function Browse() {
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
@@ -68,7 +100,7 @@ function Directory() {
   const loader = useCallback(() => fetchDirectory(coords ?? undefined), [coords]);
   const { data: restaurants, error } = useAsyncLoad(loader);
 
-  async function locate() {
+  const locate = useCallback(async () => {
     setLocating(true);
     setGeoError(null);
     try {
@@ -78,29 +110,120 @@ function Directory() {
     } finally {
       setLocating(false);
     }
-  }
+  }, []);
+
+  // Si la persona ya dio permiso antes, se usa sin volver a preguntar; si no, espera a que lo pida.
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      navigator.permissions
+        ?.query({ name: "geolocation" })
+        .then((status) => {
+          if (active && status.state === "granted") void locate();
+        })
+        .catch(() => undefined);
+    }, 0);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [locate]);
 
   return (
-    <section className="mt-8" aria-labelledby="directory-title">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="directory-title" className="text-xl font-bold">
-          Restaurantes
-        </h2>
-        <button
-          type="button"
-          onClick={() => void locate()}
-          disabled={locating}
-          className="inline-flex h-10 items-center rounded-full border border-line bg-card px-4 text-sm font-medium hover:bg-line disabled:opacity-50"
-        >
-          {coords ? "Actualizar ubicación" : locating ? "Buscando…" : "📍 Cerca de mí"}
-        </button>
-      </div>
+    <>
+      <NearbySelect
+        restaurants={restaurants}
+        located={coords !== null}
+        locating={locating}
+        onLocate={() => void locate()}
+        geoError={geoError}
+      />
+      <Directory restaurants={restaurants} error={error} />
+    </>
+  );
+}
 
+/** Lista desplegable de restaurantes cercanos; al elegir uno se abre su ficha. */
+function NearbySelect({
+  restaurants,
+  located,
+  locating,
+  onLocate,
+  geoError,
+}: {
+  restaurants: DirectoryRestaurant[] | null;
+  located: boolean;
+  locating: boolean;
+  onLocate: () => void;
+  geoError: string | null;
+}) {
+  const router = useRouter();
+  const nearby = (restaurants ?? []).filter((r) => r.distanceMeters !== null);
+
+  return (
+    <section aria-labelledby="nearby-title" className="rounded-2xl border border-line bg-card p-4">
+      <h2 id="nearby-title" className="font-semibold">
+        O elige un restaurante cercano
+      </h2>
+      {located ? (
+        <>
+          <label className="sr-only" htmlFor="nearby-select">
+            Restaurantes cercanos
+          </label>
+          <select
+            id="nearby-select"
+            defaultValue=""
+            onChange={(e) => e.target.value && router.push(`/r/${e.target.value}`)}
+            className="mt-2 h-11 w-full rounded-xl border border-line bg-background px-3"
+          >
+            <option value="">
+              {nearby.length > 0 ? "Elige un restaurante…" : "No hay restaurantes con ubicación cerca"}
+            </option>
+            {nearby.map((r) => (
+              <option key={r.id} value={r.slug}>
+                {r.name} · {formatDistance(r.distanceMeters ?? 0)}
+                {r.distanceMeters !== null && r.distanceMeters <= NEARBY_METERS ? " · estás aquí" : ""}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-muted">
+            Con tu ubicación te mostramos los más cercanos. Solo se usa para ordenarlos; no se guarda.
+          </p>
+          <button
+            type="button"
+            onClick={onLocate}
+            disabled={locating}
+            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full border border-line bg-background text-sm font-semibold hover:bg-line disabled:opacity-50"
+          >
+            {locating ? "Buscando…" : "📍 Permitir ubicación"}
+          </button>
+        </>
+      )}
       {geoError && (
         <p role="alert" className="mt-2 text-sm text-red-600">
           {geoError}
         </p>
       )}
+    </section>
+  );
+}
+
+/** Directorio completo (ordenado por cercanía si se conoce la ubicación). */
+function Directory({
+  restaurants,
+  error,
+}: {
+  restaurants: DirectoryRestaurant[] | null;
+  error: string | null;
+}) {
+  return (
+    <section aria-labelledby="directory-title">
+      <h2 id="directory-title" className="text-xl font-bold">
+        Todos los restaurantes
+      </h2>
       {error && (
         <p role="alert" className="mt-2 text-sm text-red-600">
           {error}

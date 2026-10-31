@@ -6,10 +6,11 @@ import sharp from "sharp";
 const TOMATO = "#e8452c";
 
 /** El plato: anillo exterior, centro y cubiertos. `scale` reduce el dibujo para dejar margen (iconos maskable). */
-function svg({ rounded, scale }) {
+function svg({ rounded, scale, background = true }) {
   const radius = rounded ? 112 : 0;
+  const base = background ? `<rect width="512" height="512" rx="${radius}" fill="${TOMATO}"/>` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="${radius}" fill="${TOMATO}"/>
+  ${base}
   <g transform="translate(256 256) scale(${scale}) translate(-256 -256)" fill="none" stroke="#fff" stroke-linecap="round">
     <circle cx="256" cy="256" r="118" stroke-width="26"/>
     <circle cx="256" cy="256" r="58" fill="#fff" stroke="none"/>
@@ -36,3 +37,33 @@ for (const { file, size, rounded, scale } of outputs) {
 // Mismo dibujo como SVG, para pestañas del navegador.
 await writeFile("public/icons/icon.svg", svg({ rounded: true, scale: 1 }));
 console.log("✓ icon.svg");
+
+// Iconos del lanzador de Android: cuadrado, redondo y la capa frontal del icono adaptable
+// (el fondo adaptable es el color de ic_launcher_background.xml).
+const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
+for (const [density, factor] of Object.entries(DENSITIES)) {
+  const dir = `android/app/src/main/res/mipmap-${density}`;
+  await mkdir(dir, { recursive: true });
+
+  const legacy = Math.round(48 * factor);
+  const square = await sharp(Buffer.from(svg({ rounded: true, scale: 1 }))).resize(legacy, legacy).png().toBuffer();
+  await writeFile(`${dir}/ic_launcher.png`, square);
+
+  const circle = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${legacy}" height="${legacy}"><circle cx="${legacy / 2}" cy="${legacy / 2}" r="${legacy / 2}"/></svg>`,
+  );
+  const round = await sharp(Buffer.from(svg({ rounded: false, scale: 0.9 })))
+    .resize(legacy, legacy)
+    .composite([{ input: circle, blend: "dest-in" }])
+    .png()
+    .toBuffer();
+  await writeFile(`${dir}/ic_launcher_round.png`, round);
+
+  const layer = Math.round(108 * factor);
+  const foreground = await sharp(Buffer.from(svg({ rounded: false, scale: 0.62, background: false })))
+    .resize(layer, layer)
+    .png()
+    .toBuffer();
+  await writeFile(`${dir}/ic_launcher_foreground.png`, foreground);
+}
+console.log("✓ iconos de Android");

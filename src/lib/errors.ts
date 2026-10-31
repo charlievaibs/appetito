@@ -33,6 +33,21 @@ export function describeError(message: string): string {
   if (/anonymous sign-ins are disabled/i.test(message)) {
     return "El acceso como invitado no está activado todavía. El administrador debe activarlo en Supabase.";
   }
+  // Errores de cuenta de Supabase Auth (llegan en inglés).
+  if (/invalid login credentials/i.test(message)) return "Correo o contraseña incorrectos.";
+  if (/email not confirmed/i.test(message)) return "Confirma tu correo: te enviamos un enlace al registrarte.";
+  if (/already registered|already been registered/i.test(message)) {
+    return "Ese correo ya tiene cuenta. Prueba a iniciar sesión.";
+  }
+  if (/password should be at least|weak password/i.test(message)) {
+    return "La contraseña es demasiado corta o débil (mínimo 8 caracteres).";
+  }
+  if (/provider is not enabled|unsupported provider/i.test(message)) {
+    return "El acceso con Google todavía no está activado en este servidor.";
+  }
+  if (/rate limit|too many requests/i.test(message)) {
+    return "Demasiados intentos. Espera un momento y vuelve a probar.";
+  }
   if (/failed to fetch|network/i.test(message)) {
     return "No hay conexión. Revisa tu internet e inténtalo de nuevo.";
   }

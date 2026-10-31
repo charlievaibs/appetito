@@ -1,0 +1,94 @@
+name: Android APK
+
+# Se ejecuta al subir una etiqueta de versión (v0.1.0, v0.2.0…) o a mano desde la pestaña Actions.
+# Compila la app Android (Capacitor), la firma y la publica en GitHub Releases como appetito.apk.
+# La última versión siempre está en:
+#   https://github.com/charlievaibs/appetito/releases/latest/download/appetito.apk
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión (por ejemplo 0.1.0)"
+        required: true
+      publish:
+        description: "¿Publicar en Releases? Si no, el APK queda solo como archivo de la ejecución"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Copia la configuración de Capacitor al proyecto Android (no se versiona).
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
+
+      # Con la clave propia en los secretos del repositorio, las actualizaciones se instalan
+      # encima de la versión anterior. Sin ella el APK se firma con una clave de depuración
+      # temporal (instalable, pero cada versión nueva obliga a desinstalar la anterior).
+      - name: Preparar la clave de firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Sin clave de firma propia: se usa la de depuración."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/appetito.p12"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/appetito.p12" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+
+      - name: Compilar el APK
+        working-directory: android
+        run: |
+          NAME="${VERSION#v}"
+          export APP_VERSION_NAME="$NAME"
+          export APP_VERSION_CODE="${{ github.run_number }}"
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Guardar el APK como archivo de la ejecución
+        uses: actions/upload-artifact@v4
+        with:
+          name: appetito-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      # Las etiquetas v* siempre publican; las ejecuciones manuales solo si se marca «publish».
+      - name: Publicar en Releases
+        if: github.event_name == 'push' || github.event.inputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${VERSION#v}"
+          cp android/app/build/outputs/apk/release/app-release.apk appetito.apk
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" appetito.apk --clobber
+          else
+            gh release create "$TAG" appetito.apk --title "Appetito $TAG" \
+              --notes "App Android de Appetito. Descarga appetito.apk, ábrelo en tu móvil y permite instalar desde esta fuente cuando Android lo pida."
+          fi

@@ -12,6 +12,12 @@ describe("describeError", () => {
     expect(describeError("Anonymous sign-ins are disabled")).toContain("invitado");
   });
 
+  it("traduce los errores de cuenta", () => {
+    expect(describeError("Invalid login credentials")).toContain("incorrectos");
+    expect(describeError("User already registered")).toContain("ya tiene cuenta");
+    expect(describeError("Unsupported provider: provider is not enabled")).toContain("Google");
+  });
+
   it("explica los fallos de red", () => {
     expect(describeError("TypeError: Failed to fetch")).toContain("conexión");
   });

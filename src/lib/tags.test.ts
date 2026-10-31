@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { parseTagAction, tagUrl } from "./tags";
+import { parseTagAction, parseTagLink, tagUrl } from "./tags";
+
+describe("parseTagLink", () => {
+  const token = "0123456789abcdef0123456789abcdef";
+
+  it("lee la dirección de una etiqueta", () => {
+    expect(parseTagLink(`https://getappetito.vercel.app/m/${token}`)).toEqual({ token, action: null });
+    expect(parseTagLink(` https://x.app/m/${token}?a=cuenta `)).toEqual({ token, action: "bill" });
+  });
+
+  it("acepta el código suelto", () => {
+    expect(parseTagLink(token)).toEqual({ token, action: null });
+  });
+
+  it("descarta lo que no es una etiqueta", () => {
+    expect(parseTagLink("https://example.com/otra/ruta")).toBeNull();
+    expect(parseTagLink("hola")).toBeNull();
+    expect(parseTagLink("")).toBeNull();
+  });
+});
 
 describe("tagUrl", () => {
   it("apunta a la mesa o puesto sin acción", () => {
