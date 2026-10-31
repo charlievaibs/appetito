@@ -63,13 +63,13 @@ export default function Home() {
             pedido. Gratis, rápida y sin complicaciones.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <DownloadButton />
             <Link
               href="/app"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-line px-6 font-medium transition-colors hover:bg-card"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-tomato px-6 font-semibold text-white transition-colors hover:bg-tomato-dark"
             >
-              Abrir en el navegador
+              Abrir Appetito
             </Link>
+            <DownloadButton />
           </div>
         </section>
 
@@ -122,9 +122,23 @@ export default function Home() {
               Llévalo en tu bolsillo
             </h2>
             <p className="mx-auto mt-3 max-w-md text-white/85">
-              Descarga Appetito para Android o instálalo desde el navegador.
+              Instálala desde el navegador: sin tienda de apps, sin descargas raras y se actualiza sola.
             </p>
-            <div className="mt-8 flex justify-center">
+            <div className="mx-auto mt-8 grid max-w-2xl gap-4 text-left sm:grid-cols-2">
+              <InstallStep title="En Android (Chrome)">
+                Abre Appetito y toca <strong>Instalar Appetito</strong>, o el menú ⋮ y <strong>Instalar app</strong>.
+              </InstallStep>
+              <InstallStep title="En iPhone (Safari)">
+                Abre Appetito, toca <strong>Compartir</strong> y luego <strong>Añadir a pantalla de inicio</strong>.
+              </InstallStep>
+            </div>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/app"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 font-semibold text-tomato transition-colors hover:bg-white/90"
+              >
+                Abrir Appetito
+              </Link>
               <DownloadButton inverted />
             </div>
             <ApkVerification />
@@ -143,18 +157,7 @@ function DownloadButton({ inverted = false }: { inverted?: boolean }) {
   const base =
     "inline-flex h-12 items-center justify-center rounded-full px-6 font-semibold transition-colors";
 
-  if (!RELEASE) {
-    return (
-      <span
-        aria-disabled="true"
-        className={`${base} cursor-not-allowed ${
-          inverted ? "bg-white/20 text-white/80" : "bg-line text-muted"
-        }`}
-      >
-        Descarga para Android: próximamente
-      </span>
-    );
-  }
+  if (!RELEASE) return null;
 
   return (
     <a
@@ -166,8 +169,17 @@ function DownloadButton({ inverted = false }: { inverted?: boolean }) {
           : "bg-tomato text-white hover:bg-tomato-dark"
       }`}
     >
-      Descargar para Android
+      Descargar APK para Android
     </a>
+  );
+}
+
+function InstallStep({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-white/15 p-4 text-sm text-white/95">
+      <h3 className="font-semibold">{title}</h3>
+      <p className="mt-1">{children}</p>
+    </div>
   );
 }
 
