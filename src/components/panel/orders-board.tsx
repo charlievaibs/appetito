@@ -6,7 +6,8 @@ import type { ItemStatus, OrderItem, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { formatPrice } from "@/lib/money";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
-import { useRestaurant } from "@/lib/panel-context";
+import { usePanel, useRestaurant } from "@/lib/panel-context";
+import { can } from "@/lib/roles";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { cardClass, smallButton } from "./styles";
@@ -30,7 +31,12 @@ function time(iso: string): string {
  */
 export function OrdersBoard() {
   const restaurant = useRestaurant();
+  const { role } = usePanel();
   const [actionError, setActionError] = useState<string | null>(null);
+
+  /** Permiso que exige pasar un plato a cada estado (igual que en la base de datos). */
+  const canMoveTo = (status: ItemStatus) =>
+    can(role, status === "served" ? "orders.serve" : status === "cancelled" ? "orders.cancel" : "orders.kitchen");
 
   const loader = useCallback(
     async (): Promise<SessionWithItems[]> =>
@@ -129,9 +135,11 @@ export function OrdersBoard() {
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-tomato">{formatPrice(itemsTotalCents(items))}</p>
-                  <button type="button" className={`${smallButton} mt-1`} onClick={() => closeTable(session)}>
-                    Cerrar mesa
-                  </button>
+                  {can(role, "session.close") && (
+                    <button type="button" className={`${smallButton} mt-1`} onClick={() => closeTable(session)}>
+                      Cerrar mesa
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -146,7 +154,7 @@ export function OrdersBoard() {
                       <h3 className="text-sm font-semibold">
                         {stage.title} <span className="text-muted">({stageItems.length})</span>
                       </h3>
-                      {stage.action && (
+                      {stage.action && canMoveTo(stage.action.next) && (
                         <button
                           type="button"
                           className="inline-flex h-8 items-center rounded-full bg-tomato px-3 text-xs font-semibold text-white hover:bg-tomato-dark"
@@ -158,7 +166,11 @@ export function OrdersBoard() {
                     </div>
                     <ul className="mt-2 flex flex-col gap-2">
                       {stageItems.map((item) => (
-                        <ItemRow key={item.id} item={item} onCancel={() => void setStatus([item.id], "cancelled")} />
+                        <ItemRow
+                          key={item.id}
+                          item={item}
+                          onCancel={canMoveTo("cancelled") ? () => void setStatus([item.id], "cancelled") : undefined}
+                        />
                       ))}
                     </ul>
                   </section>
@@ -179,7 +191,7 @@ export function OrdersBoard() {
 }
 
 /** Una línea compacta de plato en el tablero. */
-function ItemRow({ item, onCancel }: { item: OrderItem; onCancel: () => void }) {
+function ItemRow({ item, onCancel }: { item: OrderItem; onCancel?: () => void }) {
   const options = parseOptions(item.options);
   return (
     <li className="rounded-xl border border-line px-3 py-2 text-sm">
@@ -202,9 +214,11 @@ function ItemRow({ item, onCancel }: { item: OrderItem; onCancel: () => void }) 
       {item.changed_after_start && (
         <p className="mt-1 text-xs font-semibold text-amber-600">⚠ Modificado con cocina ya empezada</p>
       )}
-      <button type="button" onClick={onCancel} className="mt-1 text-xs text-red-600 underline">
-        Cancelar plato
-      </button>
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="mt-1 text-xs text-red-600 underline">
+          Cancelar plato
+        </button>
+      )}
     </li>
   );
 }

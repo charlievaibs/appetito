@@ -24,6 +24,22 @@ Nada es obligatorio: cada restaurante elige cómo trabajar y la app invita a usa
 | Comensal | `/app`, `/m/<código>`, `/mesa`, `/r/<restaurante>` | Quien come: directorio, entrada por NFC/QR, pedir y ajustar |
 | Personal | `/panel` | Dueño y equipo: pedidos en vivo, tomar pedido, mesas y QR, menú, ajustes |
 
+## Equipo y roles
+
+Desde un local con una sola persona hasta uno grande. Cada rol ve y puede hacer solo lo suyo (lo aplica la base de datos):
+
+| Rol | Puede |
+|---|---|
+| Dueño | Todo, incluido el equipo |
+| Gerente | Menú, mesas, ajustes y equipo (menos dueños y gerentes) |
+| Anfitrión | Mesas, reservas, tomar pedidos y servir |
+| Mesero | Tomar pedidos, enviarlos a cocina, servir y cerrar mesas |
+| Cocina | Ver pedidos, prepararlos y marcarlos listos |
+| Caja | Ver pedidos y cerrar mesas |
+
+Se invita por correo desde `/panel/equipo`; la persona se une al entrar con ese correo **ya confirmado**
+(mantén activada la confirmación de correo en Supabase en producción).
+
 ## Cómo se decide en qué restaurante estás
 
 En orden de fiabilidad: etiqueta NFC/QR de la mesa → mesa recordada en el dispositivo (abrir la app te lleva directo a pedir) →
@@ -79,7 +95,6 @@ src/
 
 ## Próximamente
 
-- Roles del equipo (gerente, anfitrión, mesero, cocina, caja) con invitaciones por correo
 - Escribir etiquetas NFC desde el panel y avisos de «llamar al mesero» y «pedir la cuenta»
 - Editor de opciones de cada plato, fotos reales y dividir la cuenta por comensal
 - Instalación como app en Android (APK) y PWA

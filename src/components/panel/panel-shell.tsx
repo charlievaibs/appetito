@@ -4,16 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { usePanel } from "@/lib/panel-context";
+import { can, ROLE_LABEL, type Permission } from "@/lib/roles";
 import { AuthForm } from "./auth-form";
 import { CreateRestaurant } from "./create-restaurant";
 import { smallButton } from "./styles";
 
-const links = [
-  { href: "/panel", label: "Pedidos" },
-  { href: "/panel/nuevo-pedido", label: "Tomar pedido" },
-  { href: "/panel/mesas", label: "Mesas" },
-  { href: "/panel/menu", label: "Menú" },
-  { href: "/panel/ajustes", label: "Ajustes" },
+/** Secciones del panel y el permiso necesario para verlas en el menú. */
+const links: { href: string; label: string; permission: Permission }[] = [
+  { href: "/panel", label: "Pedidos", permission: "orders.view" },
+  { href: "/panel/nuevo-pedido", label: "Tomar pedido", permission: "orders.take" },
+  { href: "/panel/mesas", label: "Mesas", permission: "tables.edit" },
+  { href: "/panel/menu", label: "Menú", permission: "menu.edit" },
+  { href: "/panel/equipo", label: "Equipo", permission: "team.manage" },
+  { href: "/panel/ajustes", label: "Ajustes", permission: "settings.edit" },
 ];
 
 /**
@@ -40,7 +43,7 @@ export function PanelGate({ children }: { children: ReactNode }) {
 
 /** Marco del panel: restaurante activo, correo, menú de secciones y botón de salir. */
 function PanelShell({ children }: { children: ReactNode }) {
-  const { state, restaurant, selectRestaurant, signOut } = usePanel();
+  const { state, restaurant, role, selectRestaurant, signOut } = usePanel();
   const pathname = usePathname();
   const restaurants = state.status === "ready" ? state.restaurants : [];
   const email = state.status === "ready" ? state.email : "";
@@ -65,7 +68,10 @@ function PanelShell({ children }: { children: ReactNode }) {
           ) : (
             <p className="text-lg font-bold">{restaurant?.name}</p>
           )}
-          <p className="text-xs text-muted">{email}</p>
+          <p className="text-xs text-muted">
+            {email}
+            {role ? ` · ${ROLE_LABEL[role]}` : ""}
+          </p>
         </div>
         <button type="button" onClick={() => void signOut()} className={smallButton}>
           Salir
@@ -76,7 +82,7 @@ function PanelShell({ children }: { children: ReactNode }) {
         className="mt-4 flex flex-wrap gap-2 border-b border-line pb-3 print:hidden"
         aria-label="Panel"
       >
-        {links.map((l) => {
+        {links.filter((l) => can(role, l.permission)).map((l) => {
           const active = l.href === "/panel" ? pathname === "/panel" : pathname.startsWith(l.href);
           return (
             <Link

@@ -18,6 +18,9 @@ const MESSAGES: Record<string, string> = {
   invalid_items: "Agrega al menos un plato.",
   too_many_items: "Hay demasiados platos en esta mesa. Habla con tu mesero.",
   forbidden: "No tienes permiso para hacer esto.",
+  last_owner: "El restaurante debe conservar al menos un dueño.",
+  already_member: "Esa persona ya forma parte del equipo.",
+  invalid_email: "Escribe un correo válido.",
   auth_required: "Necesitas una sesión para continuar.",
 };
 

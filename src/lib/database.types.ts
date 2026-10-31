@@ -475,6 +475,21 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_invites: { Args: never; Returns: number };
+      invite_member: {
+        Args: { p_email: string; p_restaurant_id: string; p_role: string };
+        Returns: string;
+      };
+      list_team: { Args: { p_restaurant_id: string }; Returns: Json };
+      remove_member: {
+        Args: { p_restaurant_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      revoke_invite: { Args: { p_invite_id: string }; Returns: undefined };
+      set_member_role: {
+        Args: { p_restaurant_id: string; p_role: string; p_user_id: string };
+        Returns: undefined;
+      };
       add_items: {
         Args: {
           p_for_name?: string;

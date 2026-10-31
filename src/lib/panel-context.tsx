@@ -10,17 +10,26 @@ import {
   type ReactNode,
 } from "react";
 import type { Restaurant } from "./db";
+import { can, parseRole, type Permission, type Role } from "./roles";
 import { getSupabase } from "./supabase";
 
 type PanelState =
   | { status: "loading" }
   | { status: "signed-out" }
   | { status: "error"; message: string }
-  | { status: "ready"; email: string; restaurants: Restaurant[] };
+  | {
+      status: "ready";
+      email: string;
+      restaurants: Restaurant[];
+      /** Rol de la persona en cada restaurante (por id de restaurante). */
+      roles: Record<string, Role>;
+    };
 
 type PanelContextValue = {
   state: PanelState;
   restaurant: Restaurant | null;
+  /** Rol de la persona en el restaurante activo. */
+  role: Role | null;
   selectRestaurant: (id: string) => void;
   reload: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -47,19 +56,31 @@ export function PanelProvider({ children }: { children: ReactNode }) {
         setState({ status: "signed-out" });
         return;
       }
+      // Si alguien invitó a este correo (ya confirmado), se acepta la invitación antes de cargar.
+      await supabase.rpc("accept_invites");
+
       // RLS devuelve solo los restaurantes de los que la persona es miembro.
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .order("created_at");
-      if (error) {
-        setState({ status: "error", message: error.message });
+      const [restaurants, memberships] = await Promise.all([
+        supabase.from("restaurants").select("*").order("created_at"),
+        supabase.from("restaurant_members").select("restaurant_id, role").eq("user_id", session.user.id),
+      ]);
+      if (restaurants.error || memberships.error) {
+        setState({
+          status: "error",
+          message: (restaurants.error ?? memberships.error)?.message ?? "Error desconocido",
+        });
         return;
+      }
+      const roles: Record<string, Role> = {};
+      for (const m of memberships.data) {
+        const role = parseRole(m.role);
+        if (role) roles[m.restaurant_id] = role;
       }
       setState({
         status: "ready",
         email: session.user.email ?? "",
-        restaurants: data,
+        restaurants: restaurants.data,
+        roles,
       });
     } catch (e) {
       setState({
@@ -102,6 +123,7 @@ export function PanelProvider({ children }: { children: ReactNode }) {
     return {
       state,
       restaurant,
+      role: restaurant && state.status === "ready" ? (state.roles[restaurant.id] ?? null) : null,
       selectRestaurant: setSelectedId,
       reload: load,
       signOut,
@@ -115,6 +137,11 @@ export function usePanel(): PanelContextValue {
   const ctx = useContext(PanelContext);
   if (!ctx) throw new Error("usePanel debe usarse dentro de PanelProvider");
   return ctx;
+}
+
+/** ¿Puede la persona hacer esto en el restaurante activo? (solo para mostrar u ocultar opciones) */
+export function useCan(permission: Permission): boolean {
+  return can(usePanel().role, permission);
 }
 
 /** Restaurante activo. Solo se usa dentro del panel, ya autenticado y con restaurante. */
