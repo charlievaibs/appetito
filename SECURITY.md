@@ -40,6 +40,35 @@ reemplazando el archivo.
 | 15 | La app Android abre contenido ajeno en su WebView | Navegación limitada a nuestro dominio, sin HTTP, sin depuración remota | Si la web se comprometiera, la app también |
 | 16 | Copias de seguridad de Android que filtran datos | `allowBackup="false"` | — |
 
+## Ataques probados contra el sistema (31 de octubre de 2026)
+
+Se intentó romper cada defensa; todas resistieron.
+
+| Intento | Resultado |
+|---|---|
+| Cambiar la descarga con `?url=`, `?version=`, `?next=` y rutas con `..` | Se ignoran: siempre la misma respuesta fija |
+| Métodos `POST/PUT/DELETE/PATCH`, `X-Forwarded-Host`, `X-Original-URL`, inyección de cabecera `Location` | 405 / sin efecto |
+| Compilar con `NEXT_PUBLIC_APK_URL=https://evil.example/...` | La web compilada no contiene el dominio; el botón no cambia |
+| APK real con 1 bit cambiado (inicio, medio, final), con 1 KB añadido, truncado o reemplazado | Rechazado en todos los casos |
+| Redirección de GitHub a otro dominio, dominio parecido, HTTP, puerto raro, credenciales en la URL, bucle | Bloqueado sin llegar a pedir al destino |
+| Versión o huella manipuladas (`1.2.3/../../x`, huella en mayúsculas) | Rechazado como configuración no válida |
+| Sin credenciales: crear release o etiqueta, subir archivos, editar el flujo, leer secretos, `git push` | 401 / sin acceso |
+| Inyectar `<base>` para desviar el enlace `/descargar` | La política lo ignora; el enlace sigue en nuestro dominio |
+| Cargar un script ajeno, hacer `fetch` a otro dominio, enviar un formulario a otro dominio | Bloqueado por la CSP |
+| Incrustar la web en un iframe (clickjacking) | Bloqueado por `frame-ancestors` |
+| XSS reflejado con `<img onerror>` y `<script>` en la ruta y en `?a=` | No se ejecuta ni se inserta |
+| Buscar claves, certificados o `.env` en todo el historial de git | Nada (solo el patrón del propio test) |
+| `npm audit` | 0 vulnerabilidades |
+
+## Límites que conviene conocer
+
+- **`script-src` permite scripts en línea** porque Next.js los usa para arrancar. Mitiga que React escapa todo y que no hay
+  `dangerouslySetInnerHTML`; el siguiente paso sería una CSP con *nonce*.
+- **Tu cuenta de GitHub y la de Vercel son el eslabón más débil:** quien las controle puede cambiar el código. Activa
+  verificación en dos pasos (idealmente passkey) en ambas.
+- **Coste de la descarga:** cada petición sin caché baja el APK de GitHub y lo verifica; la red de reparto lo guarda 24 h.
+- **Clave de firma perdida = reinstalar:** hay una copia en `appetito-llaves/` (fuera del repositorio). Guárdala también en otro sitio.
+
 ## Verificar un APK a mano
 
 ```bash

@@ -20,7 +20,8 @@ export const RELEASE: { version: string; sha256: string } | null = null;
  * Huella SHA-256 del certificado con el que se firma el APK (la clave nunca cambia entre
  * versiones). Permite comprobar `apksigner verify --print-certs`; null hasta crear la clave.
  */
-export const SIGNING_CERT_SHA256: string | null = null;
+export const SIGNING_CERT_SHA256: string | null =
+  "35f84b4a3aee9d939c3bf149cd16542bd78611d9cff1ddc23441acbad3fb329c";
 
 export const VERSION_PATTERN = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 export const SHA256_PATTERN = /^[0-9a-f]{64}$/;
