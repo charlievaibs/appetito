@@ -126,8 +126,7 @@ export default function Home() {
             <span className="text-tomato">a un toque de distancia.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-muted">
-            Pide desde tu mesa sin llamar al mesero, y sin quitarle trabajo al mesero que prefiere tomar el pedido.
-            Gratis, rápida y sin descargar nada.
+            Pide, ajusta tu plato y llama al mesero desde tu móvil. Sin cuenta, sin descargas y sin esperas.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

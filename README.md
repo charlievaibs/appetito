@@ -1,6 +1,6 @@
 # Appetito
 
-**Pide desde tu mesa sin llamar al mesero, y sin quitarle trabajo al mesero que prefiere tomar el pedido.**
+**Pide, ajusta tu plato y llama al mesero desde tu móvil. Sin cuenta, sin descargas y sin esperas.**
 Plataforma de pedidos para restaurantes: web instalable (PWA), gratis y pensada para móvil y tablet.
 
 **Web:** https://getappetito.vercel.app
