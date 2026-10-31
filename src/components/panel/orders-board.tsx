@@ -292,11 +292,21 @@ export function OrdersBoard() {
                 <div>
                   <h2 className="text-lg font-bold">{session.table_label}</h2>
                   <p className="text-xs text-muted">
+                    {!session.confirmed && <span className="mr-1 font-semibold text-amber-600">Por confirmar · </span>}
                     Abierta a las {time(session.opened_at)} · código <span className="font-mono font-semibold tracking-widest">{session.join_code}</span>
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-tomato">{formatPrice(itemsTotalCents(items))}</p>
+                  {!session.confirmed && can(role, "orders.take") && (
+                    <button
+                      type="button"
+                      className={`${smallButton} mt-1 mr-1`}
+                      onClick={() => void run(getSupabase().rpc("confirm_session", { p_session_id: session.id }))}
+                    >
+                      Confirmar mesa
+                    </button>
+                  )}
                   {can(role, "session.close") && (
                     <button type="button" className={`${smallButton} mt-1`} onClick={() => closeTable(session)}>
                       Cerrar mesa

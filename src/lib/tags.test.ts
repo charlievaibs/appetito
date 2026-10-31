@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTagAction, parseTagLink, tagUrl } from "./tags";
+import { inviteUrl, parseTagAction, parseTagLink, tagUrl } from "./tags";
 
 describe("parseTagLink", () => {
   const token = "0123456789abcdef0123456789abcdef";
@@ -41,5 +41,11 @@ describe("parseTagAction", () => {
     expect(parseTagAction("")).toBeNull();
     expect(parseTagAction("?a=otra")).toBeNull();
     expect(parseTagAction("?b=mesero")).toBeNull();
+  });
+});
+
+describe("inviteUrl", () => {
+  it("apunta a la ruta de invitaciones", () => {
+    expect(inviteUrl("https://x.app", "abc123")).toBe("https://x.app/i/abc123");
   });
 });

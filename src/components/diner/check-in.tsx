@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { joinSession, requestService } from "@/lib/diner-api";
 import { saveSession } from "@/lib/diner-session";
+import { WaitingForWaiter } from "./waiting-for-waiter";
 import { parseTagAction } from "@/lib/tags";
 
 /**
@@ -15,14 +16,21 @@ import { parseTagAction } from "@/lib/tags";
 export function CheckIn({ token }: { token: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [pendingRequest, setPendingRequest] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     // Las etiquetas de servicio («llamar al mesero», «pedir la cuenta») traen `?a=...`.
     const action = parseTagAction(window.location.search);
     joinSession(token)
-      .then(async (ctx) => {
+      .then(async (result) => {
         if (cancelled) return;
+        // Mesa ocupada o de un restaurante estricto: una foto del QR no basta, decide el mesero.
+        if (result.status === "pending") {
+          setPendingRequest(result.requestId);
+          return;
+        }
+        const ctx = result.ctx;
         // El aviso no debe impedir entrar a la mesa: si falla, la persona puede repetirlo desde allí.
         if (action) await requestService(ctx.sessionId, action).catch(() => undefined);
         if (cancelled) return;
@@ -40,6 +48,14 @@ export function CheckIn({ token }: { token: string }) {
       cancelled = true;
     };
   }, [token, router]);
+
+  if (pendingRequest) {
+    return (
+      <div className="mx-auto max-w-sm">
+        <WaitingForWaiter requestId={pendingRequest} table="tu mesa" onDone={() => router.replace("/app")} />
+      </div>
+    );
+  }
 
   if (error) {
     return (

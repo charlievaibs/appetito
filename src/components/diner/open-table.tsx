@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DishPicker, type PickerValues } from "@/components/dish-picker";
+import { InviteQr } from "@/components/invite-qr";
 import { ItemCard } from "@/components/item-card";
 import { MenuList } from "@/components/menu-list";
 import {
@@ -59,6 +60,7 @@ export function OpenTable({ data, reload }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
   const [picking, setPicking] = useState<Picking | null>(null);
+  const [inviting, setInviting] = useState(false);
 
   const seatId = ctx.participant?.seatId ?? null;
   const canOrder = ctx.restaurant.orderingMode !== "staff";
@@ -162,12 +164,28 @@ export function OpenTable({ data, reload }: Props) {
             Salir de la mesa
           </button>
         </div>
-        {joinCode && (
-          <p className="mt-3 text-sm text-muted">
-            ¿Vienes con más gente? Que se unan con el código{" "}
-            <span className="font-mono font-semibold tracking-widest text-foreground">{joinCode}</span>
-          </p>
-        )}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setInviting(!inviting)}
+            aria-expanded={inviting}
+            className="text-sm font-medium text-tomato underline"
+          >
+            {inviting ? "Ocultar invitación" : "Invitar a mi mesa"}
+          </button>
+          {inviting && (
+            <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-line bg-background p-4 text-center">
+              <p className="text-sm">Que tus acompañantes escaneen este QR con la cámara:</p>
+              <InviteQr sessionId={ctx.sessionId} size={200} />
+              {joinCode && (
+                <p className="text-sm text-muted">
+                  O que escriban el código{" "}
+                  <span className="font-mono font-semibold tracking-widest text-foreground">{joinCode}</span> al elegir mesa.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
         <SeatEditor ctx={ctx} highlight={needsSeat} onSaved={reload} />
       </header>
 

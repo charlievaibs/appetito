@@ -76,7 +76,9 @@ export function KitchenBoard() {
   }
 
   // Solo se muestran mesas con algo por hacer; las más antiguas primero.
+  // Una mesa abierta con un escaneo sin personal no llega a cocina hasta que el mesero la confirma.
   const tickets = (data?.sessions ?? [])
+    .filter((s) => s.confirmed)
     .map((s) => ({ ...s, todo: s.order_items.filter((i) => i.status === "pending" || i.status === "preparing") }))
     .filter((s) => s.todo.length > 0)
     .sort((a, b) => a.todo[0].created_at.localeCompare(b.todo[0].created_at));

@@ -107,14 +107,21 @@ export async function ensureSignedIn(): Promise<string> {
 export async function joinSession(
   token: string,
   options: { seatId?: string; displayName?: string } = {},
-): Promise<SessionContext> {
+): Promise<ManualJoinResult> {
   await ensureSignedIn();
   const result = await getSupabase().rpc("join_session", {
     p_token: token,
     p_seat_id: options.seatId,
     p_display_name: options.displayName,
   });
-  return parseSessionContext(unwrapRpc(result));
+  return parseJoinResult(unwrapRpc(result));
+}
+
+/** Interpreta la respuesta de un intento de entrar: sentado ya, o esperando al mesero. */
+export function parseJoinResult(json: Json): ManualJoinResult {
+  const root = asObject(json, "acceso");
+  if (root.status === "pending") return { status: "pending", requestId: asString(root.request_id, "solicitud") };
+  return { status: "joined", ctx: parseSessionContext(json) };
 }
 
 /** Consulta el estado de una mesa a la que ya pertenece el comensal (no abre sesiones). */
@@ -279,10 +286,7 @@ export async function joinTableManual(
     p_display_name: options.displayName,
     p_code: options.code,
   });
-  const json = unwrapRpc(result);
-  const root = asObject(json, "acceso");
-  if (root.status === "pending") return { status: "pending", requestId: asString(root.request_id, "solicitud") };
-  return { status: "joined", ctx: parseSessionContext(json) };
+  return parseJoinResult(unwrapRpc(result));
 }
 
 /** Cancela una solicitud de acceso pendiente. */
@@ -293,4 +297,32 @@ export async function cancelJoinRequest(requestId: string): Promise<void> {
 /** Personal: da acceso a quien eligió una mesa a mano, o lo rechaza. */
 export async function resolveJoinRequest(requestId: string, accept: boolean): Promise<void> {
   unwrapRpc(await getSupabase().rpc("resolve_join_request", { p_request_id: requestId, p_accept: accept }));
+}
+
+/** Invitación rotativa para unirse a una mesa: el token caduca en pocos minutos. */
+export type SessionInvite = { token: string; expiresAt: number };
+
+/** Crea una invitación nueva (quien está sentado en la mesa o el personal que toma pedidos). */
+export async function createSessionInvite(sessionId: string): Promise<SessionInvite> {
+  const json = asObject(unwrapRpc(await getSupabase().rpc("create_session_invite", { p_session_id: sessionId })), "invitación");
+  return { token: asString(json.token, "token"), expiresAt: Date.parse(asString(json.expires_at, "caducidad")) };
+}
+
+/** Entra a la mesa con el token de una invitación vigente. */
+export async function joinWithInvite(
+  token: string,
+  options: { seatId?: string; displayName?: string } = {},
+): Promise<SessionContext> {
+  await ensureSignedIn();
+  const result = await getSupabase().rpc("join_with_invite", {
+    p_token: token,
+    p_seat_id: options.seatId,
+    p_display_name: options.displayName,
+  });
+  return parseSessionContext(unwrapRpc(result));
+}
+
+/** Personal: confirma que hay gente en una mesa que se abrió con un escaneo. */
+export async function confirmSession(sessionId: string): Promise<void> {
+  unwrapRpc(await getSupabase().rpc("confirm_session", { p_session_id: sessionId }));
 }

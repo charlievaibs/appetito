@@ -415,6 +415,7 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          table_security: string;
           manual_join: string;
           address: string | null;
           change_policy: string;
@@ -431,6 +432,7 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          table_security?: string;
           manual_join?: string;
           address?: string | null;
           change_policy?: string;
@@ -447,6 +449,7 @@ export type Database = {
           slug: string;
         };
         Update: {
+          table_security?: string;
           manual_join?: string;
           address?: string | null;
           change_policy?: string;
@@ -594,6 +597,7 @@ export type Database = {
       };
       table_sessions: {
         Row: {
+          confirmed: boolean;
           join_code: string;
           closed_at: string | null;
           id: string;
@@ -604,6 +608,7 @@ export type Database = {
           table_label: string;
         };
         Insert: {
+          confirmed?: boolean;
           join_code?: string;
           closed_at?: string | null;
           id?: string;
@@ -614,6 +619,7 @@ export type Database = {
           table_label: string;
         };
         Update: {
+          confirmed?: boolean;
           join_code?: string;
           closed_at?: string | null;
           id?: string;
@@ -701,6 +707,12 @@ export type Database = {
       resolve_join_request: {
         Args: { p_accept: boolean; p_request_id: string };
         Returns: undefined;
+      };
+      confirm_session: { Args: { p_session_id: string }; Returns: undefined };
+      create_session_invite: { Args: { p_session_id: string }; Returns: Json };
+      join_with_invite: {
+        Args: { p_display_name?: string; p_seat_id?: string; p_token: string };
+        Returns: Json;
       };
       list_restaurants: {
         Args: { p_lat?: number; p_limit?: number; p_lng?: number };

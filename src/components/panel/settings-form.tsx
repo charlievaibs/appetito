@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { ChangePolicy, Identification, ManualJoin, OrderingMode } from "@/lib/db";
+import type { ChangePolicy, Identification, ManualJoin, OrderingMode, TableSecurity } from "@/lib/db";
 import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { getSupabase } from "@/lib/supabase";
@@ -63,6 +63,19 @@ const MANUAL_JOINS: Choice<ManualJoin>[] = [
   },
 ];
 
+const SECURITIES: Choice<TableSecurity>[] = [
+  {
+    value: "casual",
+    title: "Informal",
+    text: "El QR o NFC de una mesa libre la abre solo. Esa mesa queda «por confirmar» y sus pedidos no llegan a cocina hasta que un mesero confirme que hay gente. Ideal para bares y terrazas.",
+  },
+  {
+    value: "strict",
+    title: "Estricto",
+    text: "Solo el mesero abre las mesas (al sentar al grupo) y les muestra un QR que cambia cada pocos minutos. El QR fijo de la mesa nunca basta por sí solo.",
+  },
+];
+
 const POLICIES: Choice<ChangePolicy>[] = [
   {
     value: "before_kitchen",
@@ -85,6 +98,7 @@ export function SettingsForm() {
   const [identification, setIdentification] = useState(restaurant.identification as Identification);
   const [policy, setPolicy] = useState(restaurant.change_policy as ChangePolicy);
   const [manualJoin, setManualJoin] = useState(restaurant.manual_join as ManualJoin);
+  const [security, setSecurity] = useState(restaurant.table_security as TableSecurity);
   const [listed, setListed] = useState(restaurant.listed);
   const [description, setDescription] = useState(restaurant.description);
   const [city, setCity] = useState(restaurant.city ?? "");
@@ -127,6 +141,7 @@ export function SettingsForm() {
         identification,
         change_policy: policy,
         manual_join: manualJoin,
+        table_security: security,
         listed,
         description: description.trim(),
         city: city.trim() || null,
@@ -173,6 +188,13 @@ export function SettingsForm() {
         options={IDENTIFICATIONS}
         value={identification}
         onChange={setIdentification}
+      />
+      <Choices
+        legend="¿Cómo se protege una mesa de quien no está en el local?"
+        name="table-security"
+        options={SECURITIES}
+        value={security}
+        onChange={setSecurity}
       />
       <Choices
         legend="¿Puede el comensal elegir su mesa sin escanear?"

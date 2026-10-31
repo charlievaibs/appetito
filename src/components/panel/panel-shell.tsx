@@ -12,6 +12,7 @@ import { smallButton } from "./styles";
 /** Secciones del panel y el permiso necesario para verlas en el menú. */
 const links: { href: string; label: string; permission: Permission }[] = [
   { href: "/panel", label: "Pedidos", permission: "orders.view" },
+  { href: "/panel/salon", label: "Salón", permission: "orders.take" },
   { href: "/panel/cocina", label: "Cocina", permission: "orders.kitchen" },
   { href: "/panel/nuevo-pedido", label: "Tomar pedido", permission: "orders.take" },
   { href: "/panel/mesas", label: "Mesas", permission: "tables.edit" },

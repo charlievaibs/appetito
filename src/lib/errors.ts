@@ -17,6 +17,7 @@ const MESSAGES: Record<string, string> = {
   dish_unavailable: "Este plato ya no está disponible.",
   invalid_items: "Agrega al menos un plato.",
   too_many_items: "Hay demasiados platos en esta mesa. Habla con tu mesero.",
+  invalid_invite: "Esa invitación caducó o ya no es válida. Pide a tu mesa que te muestre una nueva.",
   manual_join_disabled: "Este restaurante solo permite entrar con la etiqueta NFC o el QR de la mesa.",
   invalid_code: "Ese código no es correcto. Pídeselo a quien reservó o a tu mesero.",
   seat_taken: "Ese asiento ya está ocupado. Elige otro.",

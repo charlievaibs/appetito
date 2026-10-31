@@ -28,6 +28,9 @@ export type DishWithOptions = DbDish & { dish_option_groups: OptionGroup[] };
 /** Cómo se toman los pedidos: solo personal, QR/NFC opcional, o los comensales piden solos. */
 export type OrderingMode = "staff" | "qr_optional" | "qr";
 
+/** Seguridad de las mesas: el QR fijo abre mesas libres (casual) o solo el mesero las abre (strict). */
+export type TableSecurity = "casual" | "strict";
+
 /** Cómo se identifica a cada comensal. */
 export type Identification = "table" | "seat" | "reservation";
 

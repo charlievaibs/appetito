@@ -47,3 +47,8 @@ export function parseTagAction(search: string): ServiceKind | null {
   const found = (Object.keys(ACTION_PARAM) as ServiceKind[]).find((k) => ACTION_PARAM[k] === value);
   return found ?? null;
 }
+
+/** Dirección que abre quien escanea la invitación rotativa de una mesa. */
+export function inviteUrl(origin: string, token: string): string {
+  return `${origin}/i/${encodeURIComponent(token)}`;
+}
