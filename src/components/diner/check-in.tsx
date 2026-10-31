@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { joinSession } from "@/lib/diner-api";
+import { joinSession, requestService } from "@/lib/diner-api";
 import { saveSession } from "@/lib/diner-session";
+import { parseTagAction } from "@/lib/tags";
 
 /**
  * Pantalla a la que llega el comensal al escanear un QR o acercar el móvil a una
@@ -17,8 +18,13 @@ export function CheckIn({ token }: { token: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Las etiquetas de servicio («llamar al mesero», «pedir la cuenta») traen `?a=...`.
+    const action = parseTagAction(window.location.search);
     joinSession(token)
-      .then((ctx) => {
+      .then(async (ctx) => {
+        if (cancelled) return;
+        // El aviso no debe impedir entrar a la mesa: si falla, la persona puede repetirlo desde allí.
+        if (action) await requestService(ctx.sessionId, action).catch(() => undefined);
         if (cancelled) return;
         saveSession({
           sessionId: ctx.sessionId,

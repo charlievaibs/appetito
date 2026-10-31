@@ -386,6 +386,60 @@ export type Database = {
           },
         ];
       };
+      service_requests: {
+        Row: {
+          created_at: string;
+          id: string;
+          kind: string;
+          requested_by: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          restaurant_id: string;
+          seat_label: string | null;
+          session_id: string;
+          table_label: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          kind: string;
+          requested_by?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id: string;
+          seat_label?: string | null;
+          session_id: string;
+          table_label: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          requested_by?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          restaurant_id?: string;
+          seat_label?: string | null;
+          session_id?: string;
+          table_label?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_restaurant_id_fkey";
+            columns: ["restaurant_id"];
+            isOneToOne: false;
+            referencedRelation: "restaurants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_requests_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "table_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       session_participants: {
         Row: {
           display_name: string | null;
@@ -485,6 +539,11 @@ export type Database = {
         Args: { p_restaurant_id: string; p_user_id: string };
         Returns: undefined;
       };
+      request_service: {
+        Args: { p_kind: string; p_session_id: string };
+        Returns: string;
+      };
+      resolve_request: { Args: { p_request_id: string }; Returns: undefined };
       revoke_invite: { Args: { p_invite_id: string }; Returns: undefined };
       set_member_role: {
         Args: { p_restaurant_id: string; p_role: string; p_user_id: string };

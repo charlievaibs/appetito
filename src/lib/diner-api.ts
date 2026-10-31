@@ -10,6 +10,7 @@ import type { Json } from "./database.types";
 import type { ChangePolicy, Identification, OrderingMode } from "./db";
 import { describeError } from "./errors";
 import { getSupabase } from "./supabase";
+import type { ServiceKind } from "./tags";
 
 /** Estado de una mesa abierta, con la configuración del restaurante. */
 export type SessionContext = {
@@ -120,6 +121,18 @@ export async function joinSession(
 export async function fetchSession(sessionId: string): Promise<SessionContext> {
   const result = await getSupabase().rpc("get_session", { p_session_id: sessionId });
   return parseSessionContext(unwrapRpc(result));
+}
+
+/** Avisa al personal (llamar al mesero o pedir la cuenta). Repetirlo no duplica el aviso. */
+export async function requestService(sessionId: string, kind: ServiceKind): Promise<void> {
+  const result = await getSupabase().rpc("request_service", { p_session_id: sessionId, p_kind: kind });
+  unwrapRpc(result);
+}
+
+/** Marca un aviso como atendido (personal) o lo cancela (quien lo envió). */
+export async function resolveRequest(requestId: string): Promise<void> {
+  const result = await getSupabase().rpc("resolve_request", { p_request_id: requestId });
+  unwrapRpc(result);
 }
 
 /** Un plato que se quiere pedir. */

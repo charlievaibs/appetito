@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
-import type { ItemStatus, OrderItem, TableSession } from "@/lib/db";
+import type { ItemStatus, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { formatPrice } from "@/lib/money";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { can } from "@/lib/roles";
 import { getSupabase } from "@/lib/supabase";
+import { SERVICE_LABEL } from "@/lib/tags";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { cardClass, smallButton } from "./styles";
 
@@ -50,9 +51,28 @@ export function OrdersBoard() {
       ),
     [restaurant.id],
   );
-  const { data: sessions, error: loadError, reload } = useAsyncLoad(loader);
+  const { data: sessions, error: loadError, reload: reloadSessions } = useAsyncLoad(loader);
 
-  // Tiempo real: platos y mesas del restaurante.
+  // Avisos pendientes de los comensales («llamar al mesero», «pedir la cuenta»).
+  const requestsLoader = useCallback(
+    async (): Promise<ServiceRequest[]> =>
+      unwrap(
+        await getSupabase()
+          .from("service_requests")
+          .select("*")
+          .eq("restaurant_id", restaurant.id)
+          .is("resolved_at", null)
+          .order("created_at"),
+      ),
+    [restaurant.id],
+  );
+  const { data: requests, reload: reloadRequests } = useAsyncLoad(requestsLoader);
+
+  const reload = useCallback(async () => {
+    await Promise.all([reloadSessions(), reloadRequests()]);
+  }, [reloadSessions, reloadRequests]);
+
+  // Tiempo real: platos, mesas y avisos del restaurante.
   useEffect(() => {
     const supabase = getSupabase();
     const channel = supabase
@@ -65,6 +85,11 @@ export function OrdersBoard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "table_sessions", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_requests", filter: `restaurant_id=eq.${restaurant.id}` },
         () => void reload(),
       )
       .subscribe();
@@ -113,6 +138,29 @@ export function OrdersBoard() {
         <p role="alert" className="mb-4 text-sm text-red-600">
           {error}
         </p>
+      )}
+      {requests && requests.length > 0 && (
+        <section aria-label="Avisos" className="mb-4 flex flex-col gap-2">
+          {requests.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-400 bg-amber-50 px-4 py-3 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100"
+            >
+              <p className="font-semibold">
+                🔔 {r.table_label}
+                {r.seat_label ? ` · ${r.seat_label}` : ""}: {SERVICE_LABEL[r.kind === "bill" ? "bill" : "waiter"]}{" "}
+                <span className="text-sm font-normal opacity-70">desde las {time(r.created_at)}</span>
+              </p>
+              <button
+                type="button"
+                className={smallButton}
+                onClick={() => void run(getSupabase().rpc("resolve_request", { p_request_id: r.id }))}
+              >
+                Atendido
+              </button>
+            </div>
+          ))}
+        </section>
       )}
       {ordered.length === 0 && !error && (
         <p className="py-10 text-center text-muted">

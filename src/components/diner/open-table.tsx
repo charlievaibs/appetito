@@ -8,17 +8,26 @@ import { ItemCard } from "@/components/item-card";
 import { MenuList } from "@/components/menu-list";
 import {
   addItems,
+  requestService,
+  resolveRequest,
   updateItem,
   updateParticipant,
   type SessionContext,
 } from "@/lib/diner-api";
 import { clearSavedSession } from "@/lib/diner-session";
-import type { DishWithOptions, OrderItem } from "@/lib/db";
+import type { DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
 import { formatPrice } from "@/lib/money";
 import { canDinerEdit, groupBy, isOwnItem, itemsTotalCents } from "@/lib/order-items";
+import { SERVICE_LABEL, type ServiceKind } from "@/lib/tags";
 
 type Props = {
-  data: { userId: string; ctx: SessionContext; dishes: DishWithOptions[]; items: OrderItem[] };
+  data: {
+    userId: string;
+    ctx: SessionContext;
+    dishes: DishWithOptions[];
+    items: OrderItem[];
+    requests: ServiceRequest[];
+  };
   reload: () => Promise<void>;
 };
 
@@ -32,7 +41,7 @@ type Picking = { dish: DishWithOptions; editing?: OrderItem };
  * la cocina no empiece) y lo que pide toda la mesa, todo sincronizado en vivo.
  */
 export function OpenTable({ data, reload }: Props) {
-  const { userId, ctx, dishes, items } = data;
+  const { userId, ctx, dishes, items, requests } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
   const [picking, setPicking] = useState<Picking | null>(null);
@@ -111,6 +120,8 @@ export function OpenTable({ data, reload }: Props) {
         </div>
         <SeatEditor ctx={ctx} highlight={needsSeat} onSaved={reload} />
       </header>
+
+      <ServiceBar sessionId={ctx.sessionId} requests={requests} onChanged={reload} />
 
       {!canOrder && (
         <p className="mt-3 rounded-xl bg-tomato/10 px-4 py-3 text-sm">
@@ -279,6 +290,66 @@ function ItemsSection({
         </section>
       ))}
       <div className="mt-4 rounded-2xl border border-line bg-card p-4">{footer}</div>
+    </div>
+  );
+}
+
+/**
+ * Botones para avisar al personal sin esperar a que pase: llamar al mesero o pedir la
+ * cuenta. Mientras el aviso está pendiente se muestra como enviado y se puede cancelar.
+ */
+function ServiceBar({
+  sessionId,
+  requests,
+  onChanged,
+}: {
+  sessionId: string;
+  requests: ServiceRequest[];
+  onChanged: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState<ServiceKind | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(kind: ServiceKind, pending: ServiceRequest | undefined) {
+    setBusy(kind);
+    setError(null);
+    try {
+      if (pending) await resolveRequest(pending.id);
+      else await requestService(sessionId, kind);
+      await onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo enviar el aviso.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-2 gap-2">
+        {(Object.keys(SERVICE_LABEL) as ServiceKind[]).map((kind) => {
+          const pending = requests.find((r) => r.kind === kind);
+          return (
+            <button
+              key={kind}
+              type="button"
+              disabled={busy !== null}
+              onClick={() => void toggle(kind, pending)}
+              aria-pressed={pending !== undefined}
+              className={`h-11 rounded-full px-3 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                pending ? "bg-tomato/15 text-tomato" : "border border-line bg-card hover:bg-line"
+              }`}
+            >
+              {pending ? `✓ Avisado · cancelar` : SERVICE_LABEL[kind]}
+            </button>
+          );
+        })}
+      </div>
+      {error && (
+        <p role="alert" className="mt-1 text-sm text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

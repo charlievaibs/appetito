@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect } from "react";
 import { fetchSession, type SessionContext } from "@/lib/diner-api";
 import { clearSavedSession, loadSavedSession } from "@/lib/diner-session";
-import type { DishWithOptions, OrderItem } from "@/lib/db";
+import type { DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { OpenTable } from "./open-table";
@@ -12,7 +12,15 @@ import { OpenTable } from "./open-table";
 type TableData =
   | { kind: "none" }
   | { kind: "closed"; restaurantName: string }
-  | { kind: "open"; userId: string; ctx: SessionContext; dishes: DishWithOptions[]; items: OrderItem[] };
+  | {
+      kind: "open";
+      userId: string;
+      ctx: SessionContext;
+      dishes: DishWithOptions[];
+      items: OrderItem[];
+      /** Avisos al personal que siguen pendientes. */
+      requests: ServiceRequest[];
+    };
 
 /**
  * Pantalla de la mesa del comensal. Carga la mesa guardada en el dispositivo,
@@ -42,7 +50,7 @@ export function TableView() {
       return { kind: "closed", restaurantName: ctx.restaurant.name };
     }
 
-    const [dishes, items] = await Promise.all([
+    const [dishes, items, requests] = await Promise.all([
       supabase
         .from("dishes")
         .select("*, dish_option_groups(*, dish_options(*))")
@@ -50,8 +58,16 @@ export function TableView() {
         .order("position")
         .order("name"),
       supabase.from("order_items").select("*").eq("session_id", ctx.sessionId).order("created_at"),
+      supabase.from("service_requests").select("*").eq("session_id", ctx.sessionId).is("resolved_at", null),
     ]);
-    return { kind: "open", userId, ctx, dishes: unwrap(dishes), items: unwrap(items) };
+    return {
+      kind: "open",
+      userId,
+      ctx,
+      dishes: unwrap(dishes),
+      items: unwrap(items),
+      requests: unwrap(requests),
+    };
   }, []);
 
   const { data, error, reload } = useAsyncLoad(loader);
@@ -66,6 +82,11 @@ export function TableView() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "order_items", filter: `session_id=eq.${sessionId}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_requests", filter: `session_id=eq.${sessionId}` },
         () => void reload(),
       )
       .on(

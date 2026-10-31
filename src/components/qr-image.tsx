@@ -3,10 +3,11 @@
 import Image from "next/image";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { tagUrl, type ServiceKind } from "@/lib/tags";
 
-/** Dirección que abre un comensal al escanear el QR de una mesa o un puesto. */
-export function qrLink(token: string): string {
-  return `${window.location.origin}/m/${token}`;
+/** Dirección que abre un comensal al escanear el QR (o tocar la etiqueta NFC) de una mesa o un puesto. */
+export function qrLink(token: string, action?: ServiceKind): string {
+  return tagUrl(window.location.origin, token, action);
 }
 
 /** Dibuja un código QR. Se genera en el propio navegador, sin enviar la dirección a ningún servicio. */

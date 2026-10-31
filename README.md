@@ -40,6 +40,16 @@ Desde un local con una sola persona hasta uno grande. Cada rol ve y puede hacer 
 Se invita por correo desde `/panel/equipo`; la persona se une al entrar con ese correo **ya confirmado**
 (mantén activada la confirmación de correo en Supabase en producción).
 
+## Etiquetas NFC y avisos
+
+Una etiqueta NFC y un QR llevan la misma dirección (`/m/<código>`), así que funcionan en iPhone y Android sin instalar nada.
+Desde `/panel/mesas/qr` el restaurante imprime los QR o, en Chrome para Android, **graba etiquetas NFC** con un toque
+(Web NFC; leerlas no requiere nada). Hay etiquetas de mesa, de puesto y de **servicio** (`?a=mesero`, `?a=cuenta`):
+al tocarlas el comensal entra a su mesa y avisa al personal. El NFC identifica; no procesa pagos.
+
+Dentro de la mesa también hay botones de **llamar al mesero** y **pedir la cuenta**. Los avisos aparecen en vivo en el
+tablero del personal hasta que alguien los marca como atendidos (un solo aviso pendiente de cada tipo por mesa).
+
 ## Cómo se decide en qué restaurante estás
 
 En orden de fiabilidad: etiqueta NFC/QR de la mesa → mesa recordada en el dispositivo (abrir la app te lleva directo a pedir) →
@@ -95,6 +105,6 @@ src/
 
 ## Próximamente
 
-- Escribir etiquetas NFC desde el panel y avisos de «llamar al mesero» y «pedir la cuenta»
+- Etiqueta NFC de entrada al restaurante (el móvil abre su ficha) y detección de local por cercanía
 - Editor de opciones de cada plato, fotos reales y dividir la cuenta por comensal
 - Instalación como app en Android (APK) y PWA
