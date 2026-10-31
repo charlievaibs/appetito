@@ -50,12 +50,14 @@ reales. Idea, concepto y desarrollo actual de **Carlos González**.
 - Pedir un cambio sobre un plato **ya en preparación**: el mesero lo consulta con cocina y lo acepta o rechaza.
 - **Llamar al mesero** y **pedir la cuenta** con un toque; **invitar** a acompañantes con un QR que se renueva solo.
 - Ver lo que pidió cada quien y el estado de cada plato en vivo.
+- **Ver los precios en bolívares** a la tasa oficial del BCV (dólar o euro, consultada sola) o a la que ponga el local.
+- **Cuenta de la mesa y pagos:** cada comensal indica si paga lo suyo, toda la mesa o platos concretos, con qué método (efectivo, pago móvil, punto, transferencia, Zelle), y el mesero o caja lo confirma. Caja ve lo cobrado del día por método.
 - Para el equipo: salón con las mesas en pantalla, pantalla de cocina, tablero de pedidos, menú con opciones, mesas y QR/NFC, equipo con roles y ajustes.
 - Instalarla como app en Android e iPhone (PWA).
 
 **Todavía no**
 
-- Cobrar dentro de la app (el pago se hace como siempre) y dividir la cuenta por persona.
+- Procesar dinero dentro de la app: Appetito **registra** quién paga qué; el pago se hace como siempre (efectivo, pago móvil, punto…), sin pasarelas ni datos de tarjeta.
 - Pedidos a domicilio o para llevar: es una app para comer en el local.
 - Reservar mesa por adelantado desde la app (el restaurante marca sus reservas en el panel).
 - Notificaciones push, publicación en tiendas de apps y funcionamiento sin conexión.
@@ -65,7 +67,7 @@ reales. Idea, concepto y desarrollo actual de **Carlos González**.
 | Vista | Rutas | Para quién |
 |---|---|---|
 | Comensal | `/app`, `/m/<código>`, `/i/<invitación>`, `/mesa`, `/r/<restaurante>` | Quien come: directorio, entrar a la mesa, pedir y ajustar |
-| Personal | `/panel` y sus secciones (Pedidos, Salón, Cocina, Tomar pedido, Mesas, Menú, Equipo, Ajustes) | Dueño y equipo del restaurante |
+| Personal | `/panel` y sus secciones (Pedidos, Salón, Caja, Cocina, Tomar pedido, Mesas, Menú, Equipo, Ajustes) | Dueño y equipo del restaurante |
 
 ## Equipo y roles
 
@@ -164,6 +166,7 @@ android/               envoltorio Android (Capacitor)
 
 ## Próximamente
 
-- Dividir la cuenta por comensal y editor de opciones de cada plato
+- Cobro al pedir o al final según el local, cuentas abiertas para clubes y reportes de caja
+- Editor de opciones de cada plato
 - Fotos reales de los platos y etiqueta NFC de entrada al restaurante
 - Publicación del APK de Android y límite de intentos en los códigos de mesa

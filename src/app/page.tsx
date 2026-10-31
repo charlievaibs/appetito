@@ -6,6 +6,7 @@ const dinerFeatures = [
   { icon: "📲", title: "Entras sin cuenta", text: "Acercas el móvil a la etiqueta NFC, escaneas el QR o eliges tu mesa y tu asiento en la app. Sin registrarte ni descargar nada." },
   { icon: "🍔", title: "Pides y ajustas tu plato", text: "«Sin salsa», «extra de queso», término de la carne… Puedes cambiarlo hasta que cocina empiece, sin llamar a nadie." },
   { icon: "🧾", title: "Tienes tu historial", text: "Ves lo que pediste tú y lo que pidió la mesa, con su estado en vivo: esperando, en preparación, listo, servido." },
+  { icon: "💳", title: "Pagas como quieras", text: "Cada quien paga lo suyo, uno paga toda la mesa o se reparte por platos. Ves el total en dólares y en bolívares a la tasa del BCV." },
   { icon: "🔔", title: "Avisas sin levantar la mano", text: "«Llamar al mesero» y «Pedir la cuenta» con un toque. El mesero lo ve al instante y lo marca como atendido." },
   { icon: "👥", title: "Invitas a tu mesa", text: "Muestras un QR que se renueva solo y tus acompañantes se unen. Una foto del QR de la mesa no sirve para colarse." },
   { icon: "📍", title: "Encuentras restaurantes", text: "Un directorio con los más cercanos (solo si das tu ubicación) y el menú de cada uno antes de sentarte." },
@@ -18,6 +19,7 @@ const restaurantFeatures = [
   { icon: "📋", title: "Pantalla de cocina", text: "Un ticket por mesa con opciones y notas. Cocina marca cuándo empieza y cuándo está listo; los cambios llegan marcados." },
   { icon: "✏️", title: "Cambios bajo control", text: "Antes de preparar, el comensal cambia lo que quiera. Si ya empezó, pide el cambio y el mesero decide con cocina." },
   { icon: "🍽️", title: "Menú y opciones propias", text: "Platos, precios, categorías y opciones (quitar ingredientes, extras, término). Los precios los calcula el servidor, nunca el cliente." },
+  { icon: "💵", title: "Caja y precios en bolívares", text: "Precios en dólares, bolívares o ambos con la tasa oficial del BCV o la tuya. Confirma pagos, cobra por mesa y ve lo cobrado hoy por método." },
   { icon: "🏷️", title: "NFC y QR para tus mesas", text: "Imprime QR o graba etiquetas NFC desde el panel. Se pueden usar por mesa o por asiento, y tú decides cuánto control quieres." },
 ];
 
@@ -29,11 +31,12 @@ const can = [
   "Elegir mesa y asiento sin escanear (con código o permiso del mesero)",
   "Proteger las mesas de quien no está en el local",
   "Gestionar equipo, mesas, menú y ajustes con permisos por rol",
+  "Ver los precios en bolívares con la tasa oficial del BCV o la tuya, y repartir y registrar los pagos de la mesa",
   "Funcionar como app instalable en Android e iPhone (PWA)",
 ];
 const cannot = [
-  "Cobrar dentro de la app: el pago se hace como siempre en caja o con el mesero",
-  "Dividir la cuenta por persona (está en la lista de pendientes)",
+  "Procesar pagos o tarjetas dentro de la app: Appetito registra quién paga qué y el pago se hace como siempre",
+  "Cobrar al momento de pedir o abrir cuentas para clubes (en preparación)",
   "Pedir a domicilio o para llevar: es una app para comer en el local",
   "Reservar mesa por adelantado desde la app (el restaurante marca sus reservas)",
   "Notificaciones push y publicación en tiendas de apps (por ahora se instala desde el navegador)",
