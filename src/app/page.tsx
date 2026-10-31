@@ -153,8 +153,9 @@ export default function Home() {
             </p>
             <p>
               Appetito pone el pedido en el móvil de cada persona y en las pantallas del equipo, todo conectado en vivo.
-              Hay <strong className="text-foreground">un único pedido vivo por mesa</strong> y tanto el comensal como el
-              mesero pueden escribir en él: nadie se ve obligado a usar una forma u otra.
+              Cada mesa tiene <strong className="text-foreground">una sola cuenta compartida</strong>: cada comensal agrega y
+              cambia sus propios platos, el mesero puede hacerlo por cualquiera, y todo se suma a la cuenta de la mesa.
+              Nadie se ve obligado a usar una forma u otra.
             </p>
           </div>
         </Section>

@@ -11,7 +11,8 @@ En un restaurante, pedir, cambiar «sin cebolla» o pedir la cuenta suele depend
 Eso provoca esperas, malentendidos y platos mal hechos. Appetito pone el pedido en el móvil de cada comensal y en las
 pantallas del equipo (mesero, cocina, caja), todo conectado en tiempo real.
 
-Hay **un único pedido vivo por mesa** y tanto el comensal como el mesero pueden escribir en él. Nada es obligatorio:
+Cada mesa tiene **una sola cuenta compartida**: cada comensal agrega, cambia o cancela sus propios platos (y el mesero puede
+hacerlo por cualquiera), y todo se suma a la cuenta de la mesa, con cada plato atribuido a quien lo pidió. Nada es obligatorio:
 cada restaurante elige cómo trabajar y la app invita a usar lo más cómodo, sin forzarlo.
 
 ## Por qué se hizo
