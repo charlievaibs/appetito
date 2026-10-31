@@ -49,7 +49,7 @@ apksigner verify --print-certs appetito-<versión>.apk   # el SHA-256 del certif
 
 ## Publicar una versión nueva
 
-1. Ejecuta el flujo **Android APK** (versión `X.Y.Z`, marcando publicar).
+1. Crea y sube la etiqueta de versión (solo un administrador puede): `git tag vX.Y.Z && git push origin vX.Y.Z`. El flujo **Android APK** compila, firma y publica la release (te pedirá aprobar el entorno `release`).
 2. Copia la huella SHA-256 que aparece en el resumen de la ejecución.
 3. Edita `src/lib/release.ts` con la versión y la huella, y haz commit. Solo entonces la web ofrece la versión nueva.
 

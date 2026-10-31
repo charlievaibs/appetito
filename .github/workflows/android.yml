@@ -1,9 +1,10 @@
 name: Android APK
 
 # Se ejecuta al subir una etiqueta de versión (v0.1.0, v0.2.0…) o a mano desde la pestaña Actions.
+# Las etiquetas v* están protegidas: solo un administrador puede crearlas, y publicar siempre pasa por ahí.
+# Una ejecución manual solo compila y deja el APK como archivo de la ejecución (no publica nada).
 # Compila la app Android (Capacitor), la firma y la publica en GitHub Releases como appetito.apk.
-# La última versión siempre está en:
-#   https://github.com/charlievaibs/appetito/releases/latest/download/appetito.apk
+# La web NO enlaza a esta release: ofrece la versión fijada en src/lib/release.ts, ver SECURITY.md.
 on:
   push:
     tags: ["v*"]
@@ -12,10 +13,6 @@ on:
       version:
         description: "Versión (por ejemplo 0.1.0)"
         required: true
-      publish:
-        description: "¿Publicar en Releases? Si no, el APK queda solo como archivo de la ejecución"
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -99,17 +96,15 @@ jobs:
           name: appetito-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
-      # Las etiquetas v* siempre publican; las ejecuciones manuales solo si se marca «publish».
+      # Solo al subir una etiqueta v*. La release se crea como borrador con el APK y se publica al final:
+      # las releases son inmutables (no se pueden cambiar los archivos una vez publicadas).
       - name: Publicar en Releases
-        if: github.event_name == 'push' || github.event.inputs.publish == 'true'
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v${VERSION#v}"
+          TAG="${GITHUB_REF_NAME}"
           cp android/app/build/outputs/apk/release/app-release.apk appetito.apk
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" appetito.apk --clobber
-          else
-            gh release create "$TAG" appetito.apk --title "Appetito $TAG" \
-              --notes "App Android de Appetito. Descarga appetito.apk, ábrelo en tu móvil y permite instalar desde esta fuente cuando Android lo pida."
-          fi
+          SHA=$(sha256sum appetito.apk | cut -d' ' -f1)
+          gh release create "$TAG" appetito.apk --draft --verify-tag --title "Appetito $TAG"             --notes "App Android de Appetito. SHA-256: $SHA"
+          gh release edit "$TAG" --draft=false
