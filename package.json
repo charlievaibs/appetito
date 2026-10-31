@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@capacitor/android": "^7.6.10",
-    "@capacitor/cli": "^7.6.10",
+    "@capacitor/cli": "^8.6.0",
     "@capacitor/core": "^7.6.10",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
