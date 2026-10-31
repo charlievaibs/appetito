@@ -8,7 +8,16 @@ import { cardClass, inputClass, primaryButton } from "./styles";
  * Entrar o crear cuenta con correo y contraseña (Supabase Auth). Si el proyecto
  * exige confirmar el correo, al crear la cuenta se avisa de que hay que abrirlo.
  */
-export function AuthForm() {
+export function AuthForm({
+  title,
+  subtitle,
+  redirectPath = "/panel",
+}: {
+  title?: string;
+  subtitle?: string;
+  /** Adónde vuelve la persona tras confirmar su correo. */
+  redirectPath?: string;
+} = {}) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +39,7 @@ export function AuthForm() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/panel` },
+          options: { emailRedirectTo: `${window.location.origin}${redirectPath}` },
         });
         if (error) setError(error.message);
         else if (!data.session) {
@@ -47,10 +56,10 @@ export function AuthForm() {
   return (
     <div className={`mx-auto mt-10 max-w-sm ${cardClass}`}>
       <h1 className="text-2xl font-bold tracking-tight">
-        {mode === "login" ? "Entrar al panel" : "Crear cuenta"}
+        {title ?? (mode === "login" ? "Entrar al panel" : "Crear cuenta")}
       </h1>
       <p className="mt-1 text-sm text-muted">
-        Para restaurantes: gestiona tu menú, tus mesas y tus pedidos.
+        {subtitle ?? "Para restaurantes: gestiona tu menú, tus mesas y tus pedidos."}
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">

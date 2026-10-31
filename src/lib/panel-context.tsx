@@ -20,6 +20,11 @@ type PanelState =
   | {
       status: "ready";
       email: string;
+      userId: string;
+      /** Nombre que puso la persona en cada restaurante (por id de restaurante). */
+      names: Record<string, string | null>;
+      /** true si su contraseña es temporal (se la creó el dueño) y debe cambiarla. */
+      tempPassword: boolean;
       restaurants: Restaurant[];
       /** Rol de la persona en cada restaurante (por id de restaurante). */
       roles: Record<string, Role>;
@@ -62,7 +67,7 @@ export function PanelProvider({ children }: { children: ReactNode }) {
       // RLS devuelve solo los restaurantes de los que la persona es miembro.
       const [restaurants, memberships] = await Promise.all([
         supabase.from("restaurants").select("*").order("created_at"),
-        supabase.from("restaurant_members").select("restaurant_id, role").eq("user_id", session.user.id),
+        supabase.from("restaurant_members").select("restaurant_id, role, display_name").eq("user_id", session.user.id),
       ]);
       if (restaurants.error || memberships.error) {
         setState({
@@ -72,13 +77,18 @@ export function PanelProvider({ children }: { children: ReactNode }) {
         return;
       }
       const roles: Record<string, Role> = {};
+      const names: Record<string, string | null> = {};
       for (const m of memberships.data) {
         const role = parseRole(m.role);
         if (role) roles[m.restaurant_id] = role;
+        names[m.restaurant_id] = m.display_name;
       }
       setState({
         status: "ready",
         email: session.user.email ?? "",
+        userId: session.user.id,
+        names,
+        tempPassword: session.user.user_metadata?.temp_password === true,
         restaurants: restaurants.data,
         roles,
       });

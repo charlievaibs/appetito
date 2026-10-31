@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { usePanel } from "@/lib/panel-context";
 import { slugify } from "@/lib/slug";
@@ -44,6 +45,13 @@ export function CreateRestaurant() {
       <h1 className="text-2xl font-bold tracking-tight">Crea tu restaurante</h1>
       <p className="mt-1 text-sm text-muted">
         Después podrás añadir tu menú, tus mesas y elegir cómo se piden los platos.
+      </p>
+
+      <p className="mt-3 rounded-xl bg-line px-3 py-2 text-sm">
+        ¿Te invitaron a un restaurante?{" "}
+        <Link href="/unirse" className="font-semibold text-tomato underline">
+          Unirme con un código
+        </Link>
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">

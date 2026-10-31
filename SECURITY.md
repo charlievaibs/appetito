@@ -69,6 +69,12 @@ Se intentó romper cada defensa; todas resistieron.
 - **Coste de la descarga:** cada petición sin caché baja el APK de GitHub y lo verifica; la red de reparto lo guarda 24 h.
 - **Clave de firma perdida = reinstalar:** hay una copia en `appetito-llaves/` (fuera del repositorio). Guárdala también en otro sitio.
 
+## Cuentas del equipo
+
+- **Enlaces para unirse:** caducan (1–30 días), tienen usos limitados, se pueden revocar y no existen para el rol de dueño; quien los usa debe tener una cuenta con el correo confirmado (un invitado no puede).
+- **Crear cuentas de empleados:** la hace una Edge Function de Supabase (`create-staff`). La clave de administración solo existe allí; la función exige una sesión real de dueño o gerente y comprueba en la base de datos que pueda administrar ese rol. Sin sesión o con un token falso responde 401 (probado). La contraseña temporal se entrega una vez y la persona debe cambiarla al entrar.
+- **Bajas:** exigen escribir el nombre o el correo de la persona (lo verifica la base de datos), nunca dejan al restaurante sin dueño y quedan en un registro de actividad. Suspender es reversible.
+
 ## Verificar un APK a mano
 
 ```bash

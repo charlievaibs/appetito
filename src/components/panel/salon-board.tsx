@@ -9,6 +9,7 @@ import { closeTable } from "@/lib/close-table";
 import { can, canCloseTable, canForceClose } from "@/lib/roles";
 import { getSupabase } from "@/lib/supabase";
 import { SERVICE_LABEL } from "@/lib/tags";
+import { parseStaffNames, personLabel, type StaffName } from "@/lib/team";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { cardClass, primaryButton, smallButton } from "./styles";
 
@@ -17,6 +18,8 @@ type SalonData = {
   sessions: TableSession[];
   services: ServiceRequest[];
   joins: JoinRequest[];
+  /** Nombres del equipo, para mostrar quién atiende cada mesa. */
+  staff: StaffName[];
 };
 
 type TableState = "free" | "occupied" | "unconfirmed" | "reserved";
@@ -42,23 +45,26 @@ const STATE_STYLE: Record<TableState, string> = {
  */
 export function SalonBoard() {
   const restaurant = useRestaurant();
-  const { role } = usePanel();
+  const { role, state } = usePanel();
+  const myId = state.status === "ready" ? state.userId : "";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loader = useCallback(async (): Promise<SalonData> => {
     const supabase = getSupabase();
-    const [tables, sessions, services, joins] = await Promise.all([
+    const [tables, sessions, services, joins, staff] = await Promise.all([
       supabase.from("dining_tables").select("*").eq("restaurant_id", restaurant.id).eq("active", true),
       supabase.from("table_sessions").select("*").eq("restaurant_id", restaurant.id).eq("status", "open"),
       supabase.from("service_requests").select("*").eq("restaurant_id", restaurant.id).is("resolved_at", null),
       supabase.from("join_requests").select("*").eq("restaurant_id", restaurant.id).eq("status", "pending"),
+      supabase.rpc("list_staff_names", { p_restaurant_id: restaurant.id }),
     ]);
     return {
       tables: unwrap(tables).toSorted((a, b) => a.label.localeCompare(b.label, "es", { numeric: true })),
       sessions: unwrap(sessions),
       services: unwrap(services),
       joins: unwrap(joins),
+      staff: parseStaffNames(unwrap(staff)),
     };
   }, [restaurant.id]);
   const { data, error: loadError, reload } = useAsyncLoad(loader);
@@ -90,7 +96,11 @@ export function SalonBoard() {
   if (!data && !(error ?? loadError)) {
     return <div className="h-40 animate-pulse rounded-2xl bg-card" aria-hidden="true" />;
   }
-  const { tables, sessions, services, joins } = data ?? { tables: [], sessions: [], services: [], joins: [] };
+  const { tables, sessions, services, joins, staff } = data ?? { tables: [], sessions: [], services: [], joins: [], staff: [] };
+  const waiterName = (id: string | null) => {
+    const p = staff.find((x) => x.userId === id);
+    return p ? personLabel({ displayName: p.name }) : null;
+  };
 
   const stateOf = (table: DiningTable): TableState => {
     const session = sessions.find((s) => s.table_id === table.id);
@@ -134,7 +144,10 @@ export function SalonBoard() {
                     {STATE_LABEL[state]}
                   </span>
                 </span>
-                <span className="mt-1 block text-xs text-muted">{t.capacity} personas</span>
+                <span className="mt-1 block text-xs text-muted">
+                  {t.capacity} personas
+                  {session && (waiterName(session.waiter_id) ? ` · 👤 ${waiterName(session.waiter_id)}` : " · sin mesero")}
+                </span>
                 {(calls.length > 0 || asking > 0) && (
                   <span className="mt-2 flex flex-wrap gap-1 text-xs font-medium">
                     {calls.map((c) => (
@@ -158,6 +171,9 @@ export function SalonBoard() {
           session={sessions.find((s) => s.table_id === selected.id) ?? null}
           services={services}
           joins={joins.filter((j) => j.table_id === selected.id)}
+          staff={staff}
+          myId={myId}
+          canAssign={can(role, "team.manage")}
           canOpen={can(role, "orders.take")}
           canClose={canCloseTable(role, restaurant.table_close as "cashier" | "staff")}
           canForce={canForceClose(role)}
@@ -174,6 +190,9 @@ function TablePanel({
   session,
   services,
   joins,
+  staff,
+  myId,
+  canAssign,
   canOpen,
   canClose,
   canForce,
@@ -183,6 +202,9 @@ function TablePanel({
   session: TableSession | null;
   services: ServiceRequest[];
   joins: JoinRequest[];
+  staff: StaffName[];
+  myId: string;
+  canAssign: boolean;
   canOpen: boolean;
   canClose: boolean;
   canForce: boolean;
@@ -259,6 +281,35 @@ function TablePanel({
               )}
             </div>
           )}
+
+          <div className="flex w-full flex-wrap items-center justify-center gap-2 text-sm">
+            <span>
+              Atiende:{" "}
+              <strong>{staff.find((p) => p.userId === session.waiter_id)?.name ?? (session.waiter_id ? "un compañero" : "nadie todavía")}</strong>
+            </span>
+            {canOpen && session.waiter_id !== myId && (
+              <button type="button" className={smallButton} onClick={() => void run(supabase.rpc("claim_session", { p_session_id: session.id }))}>
+                Atender yo
+              </button>
+            )}
+            {canAssign && (
+              <select
+                aria-label="Asignar mesa a"
+                value=""
+                onChange={(e) => e.target.value && void run(supabase.rpc("assign_session", { p_session_id: session.id, p_user_id: e.target.value }))}
+                className="h-9 rounded-xl border border-line bg-background px-2 text-sm"
+              >
+                <option value="">Asignar a…</option>
+                {staff
+                  .filter((p) => ["owner", "manager", "host", "waiter"].includes(p.role))
+                  .map((p) => (
+                    <option key={p.userId} value={p.userId}>
+                      {personLabel({ displayName: p.name })}
+                    </option>
+                  ))}
+              </select>
+            )}
+          </div>
 
           <p className="text-sm text-muted">Que el grupo escanee este QR para unirse a la mesa:</p>
           {canOpen && <InviteQr sessionId={session.id} size={240} />}

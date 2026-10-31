@@ -453,20 +453,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      staff_events: {
+        Row: { action: string; actor: string | null; created_at: string; detail: Json; id: string; restaurant_id: string; target: string | null };
+        Insert: { action: string; actor?: string | null; created_at?: string; detail?: Json; id?: string; restaurant_id: string; target?: string | null };
+        Update: { action?: string; actor?: string | null; created_at?: string; detail?: Json; id?: string; restaurant_id?: string; target?: string | null };
+        Relationships: [];
+      };
+      staff_join_links: {
+        Row: { active: boolean; code: string; created_at: string; created_by: string | null; expires_at: string; id: string; max_uses: number; restaurant_id: string; role: string; uses: number };
+        Insert: { active?: boolean; code: string; created_at?: string; created_by?: string | null; expires_at: string; id?: string; max_uses?: number; restaurant_id: string; role: string; uses?: number };
+        Update: { active?: boolean; code?: string; created_at?: string; created_by?: string | null; expires_at?: string; id?: string; max_uses?: number; restaurant_id?: string; role?: string; uses?: number };
+        Relationships: [];
+      };
       restaurant_members: {
         Row: {
+          active: boolean;
+          display_name: string | null;
           created_at: string;
           restaurant_id: string;
           role: string;
           user_id: string;
         };
         Insert: {
+          active?: boolean;
+          display_name?: string | null;
           created_at?: string;
           restaurant_id: string;
           role?: string;
           user_id: string;
         };
         Update: {
+          active?: boolean;
+          display_name?: string | null;
           created_at?: string;
           restaurant_id?: string;
           role?: string;
@@ -699,6 +717,7 @@ export type Database = {
       };
       table_sessions: {
         Row: {
+          waiter_id: string | null;
           closed_unpaid_cents: number;
           confirmed: boolean;
           join_code: string;
@@ -711,6 +730,7 @@ export type Database = {
           table_label: string;
         };
         Insert: {
+          waiter_id?: string | null;
           closed_unpaid_cents?: number;
           confirmed?: boolean;
           join_code?: string;
@@ -723,6 +743,7 @@ export type Database = {
           table_label: string;
         };
         Update: {
+          waiter_id?: string | null;
           closed_unpaid_cents?: number;
           confirmed?: boolean;
           join_code?: string;
@@ -763,7 +784,7 @@ export type Database = {
       };
       list_team: { Args: { p_restaurant_id: string }; Returns: Json };
       remove_member: {
-        Args: { p_restaurant_id: string; p_user_id: string };
+        Args: { p_confirm: string; p_restaurant_id: string; p_user_id: string };
         Returns: undefined;
       };
       request_service: {
@@ -800,6 +821,19 @@ export type Database = {
         Returns: undefined;
       };
       cancel_payment: { Args: { p_payment_id: string }; Returns: undefined };
+      create_staff_link: {
+        Args: { p_days?: number; p_max_uses?: number; p_restaurant_id: string; p_role: string };
+        Returns: Json;
+      };
+      revoke_staff_link: { Args: { p_link_id: string }; Returns: undefined };
+      preview_staff_link: { Args: { p_code: string }; Returns: Json };
+      redeem_staff_link: { Args: { p_code: string; p_display_name?: string }; Returns: Json };
+      set_my_name: { Args: { p_name: string; p_restaurant_id: string }; Returns: undefined };
+      list_staff_names: { Args: { p_restaurant_id: string }; Returns: Json };
+      set_member_active: { Args: { p_active: boolean; p_restaurant_id: string; p_user_id: string }; Returns: undefined };
+      claim_session: { Args: { p_session_id: string }; Returns: undefined };
+      assign_session: { Args: { p_session_id: string; p_user_id: string }; Returns: undefined };
+      staff_performance: { Args: { p_from: string; p_restaurant_id: string; p_to: string }; Returns: Json };
       restaurant_pricing: { Args: { p_restaurant_id: string }; Returns: Json };
       request_item_change: {
         Args: { p_changes: Json; p_item_id: string; p_message: string };

@@ -7,6 +7,7 @@ import { usePanel } from "@/lib/panel-context";
 import { PricingProvider, RateNote } from "@/lib/pricing";
 import { parsePricingSettings } from "@/lib/rates";
 import { can, ROLE_LABEL, type Permission } from "@/lib/roles";
+import { AccountNotices } from "./account-notices";
 import { AuthForm } from "./auth-form";
 import { CreateRestaurant } from "./create-restaurant";
 import { smallButton } from "./styles";
@@ -82,6 +83,8 @@ function PanelShell({ children }: { children: ReactNode }) {
           Salir
         </button>
       </div>
+
+      <AccountNotices />
 
       <nav
         className="mt-4 flex flex-wrap gap-2 border-b border-line pb-3 print:hidden"

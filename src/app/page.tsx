@@ -14,7 +14,7 @@ const dinerFeatures = [
 
 /** Qué obtiene el restaurante. */
 const restaurantFeatures = [
-  { icon: "🧑‍🍳", title: "Un equipo con roles reales", text: "Dueño, gerente, anfitrión, mesero, cocina y caja. Cada uno ve y puede hacer solo lo suyo, desde un local de una persona hasta uno grande." },
+  { icon: "🧑‍🍳", title: "Un equipo con roles reales", text: "Dueño, gerente, anfitrión, mesero, cocina y caja. Se suman con un enlace, QR o código, y ves quién atiende cada mesa y cómo rinde cada uno." },
   { icon: "🪑", title: "Salón con las mesas en pantalla", text: "Estado de cada mesa de un vistazo, avisos de los comensales, «Abrir mesa» con un QR que cambia solo, dar acceso y cerrar." },
   { icon: "📋", title: "Pantalla de cocina", text: "Un ticket por mesa con opciones y notas. Cocina marca cuándo empieza y cuándo está listo; los cambios llegan marcados." },
   { icon: "✏️", title: "Cambios bajo control", text: "Antes de preparar, el comensal cambia lo que quiera. Si ya empezó, pide el cambio y el mesero decide con cocina." },
