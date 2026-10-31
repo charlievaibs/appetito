@@ -23,6 +23,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Genera los tipos de rutas (PageProps, LayoutProps) que usa el código antes de comprobar tipos.
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm audit --omit=dev --audit-level=high
