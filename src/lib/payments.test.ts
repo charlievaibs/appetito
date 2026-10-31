@@ -57,6 +57,20 @@ describe("coverage", () => {
   });
 });
 
+describe("coverage con IVA", () => {
+  it("el total de cada línea incluye el IVA", () => {
+    const rows = coverage(items, [], [], 16);
+    expect(rows.map((r) => r.total)).toEqual([1044, 522]); // 900 y 450 con 16 %
+    expect(billTotals(rows).total).toBe(1566);
+  });
+
+  it("un pago ya hecho con IVA deja la línea saldada", () => {
+    const rows = coverage(items, [{ payment_id: "p1", item_id: "a", amount_usd_cents: 1044 }], [{ id: "p1", status: "confirmed" }], 16);
+    expect(rows[0].remaining).toBe(0);
+    expect(rows[1].remaining).toBe(522);
+  });
+});
+
 describe("selectionTotal", () => {
   it("suma lo que falta de los platos elegidos", () => {
     const rows = coverage(items, [], []);

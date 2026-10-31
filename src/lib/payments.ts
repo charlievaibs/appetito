@@ -33,7 +33,7 @@ export function parsePaymentMethods(value: unknown): PaymentMethod[] {
 /** Estado de pago de un plato. */
 export type ItemCoverage = {
   item: OrderItem;
-  /** Total de la línea en céntimos de dólar. */
+  /** Total de la línea (con IVA) en céntimos de la moneda base. */
   total: number;
   /** Cubierto por pagos confirmados. */
   paid: number;
@@ -48,12 +48,14 @@ export function coverage(
   items: OrderItem[],
   paymentItems: Pick<PaymentItem, "item_id" | "payment_id" | "amount_usd_cents">[],
   payments: Pick<Payment, "id" | "status">[],
+  vatPercent = 0,
 ): ItemCoverage[] {
   const status = new Map(payments.map((p) => [p.id, p.status]));
   return items
     .filter((i) => i.status !== "cancelled")
     .map((item) => {
-      const total = item.unit_price_cents * item.quantity;
+      // Con IVA, por línea y redondeado al céntimo, igual que lo calcula la base de datos.
+      const total = Math.round((item.unit_price_cents * item.quantity * (100 + vatPercent)) / 100);
       let paid = 0;
       let pending = 0;
       for (const pi of paymentItems) {

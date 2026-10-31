@@ -50,6 +50,16 @@ export function itemsTotalCents(
     .reduce((sum, i) => sum + lineTotalCents(i), 0);
 }
 
+/** Total con IVA de los platos que cuentan: se suma el importe con IVA de cada línea (como lo cobra la base de datos). */
+export function grossItemsTotalCents(
+  items: Pick<OrderItem, "unit_price_cents" | "quantity" | "status">[],
+  vatPercent: number,
+): number {
+  return items
+    .filter((i) => i.status !== "cancelled")
+    .reduce((sum, i) => sum + Math.round((i.unit_price_cents * i.quantity * (100 + vatPercent)) / 100), 0);
+}
+
 /** ¿Se puede cambiar un plato en este estado según la política del restaurante? */
 export function isEditableStatus(status: string, policy: ChangePolicy): boolean {
   return status === "pending" || (status === "preparing" && policy === "until_ready");

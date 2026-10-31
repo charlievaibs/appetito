@@ -4,6 +4,7 @@ import {
   canDinerEdit,
   describeChange,
   groupBy,
+  grossItemsTotalCents,
   isEditableStatus,
   itemsTotalCents,
   latestRequestFor,
@@ -29,6 +30,7 @@ function group(over: Partial<OptionGroup> & { options: [string, number][] }): Op
       name: id,
       price_delta_cents: price,
       available: true,
+      diner_visible: true,
       position: i,
     })),
   };
@@ -159,5 +161,18 @@ describe("latestRequestFor", () => {
     ];
     expect(latestRequestFor(requests, "a")?.id).toBe(2);
     expect(latestRequestFor(requests, "z")).toBeUndefined();
+  });
+});
+
+describe("grossItemsTotalCents", () => {
+  const rows = [
+    { unit_price_cents: 1750, quantity: 1, status: "served" },
+    { unit_price_cents: 450, quantity: 2, status: "pending" },
+    { unit_price_cents: 9999, quantity: 1, status: "cancelled" },
+  ];
+
+  it("suma el IVA por línea y no cuenta lo cancelado", () => {
+    expect(grossItemsTotalCents(rows, 16)).toBe(2030 + 1044);
+    expect(grossItemsTotalCents(rows, 0)).toBe(1750 + 900);
   });
 });

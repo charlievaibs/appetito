@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/status-badge";
 import type { ChangeRequest, ItemStatus, JoinRequest, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { usePricing } from "@/lib/pricing";
-import { itemsTotalCents, parseOptions } from "@/lib/order-items";
+import { parseOptions } from "@/lib/order-items";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { closeTable as closeTableRequest } from "@/lib/close-table";
 import { can, canCloseTable, canForceClose } from "@/lib/roles";
@@ -32,7 +32,7 @@ function time(iso: string): string {
  * etapa. Se actualiza en vivo cuando un comensal o un compañero agrega o cambia algo.
  */
 export function OrdersBoard() {
-  const { format } = usePricing();
+  const { formatTotal } = usePricing();
   const restaurant = useRestaurant();
   const { role } = usePanel();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -305,7 +305,7 @@ export function OrdersBoard() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-tomato">{format(itemsTotalCents(items))}</p>
+                  <p className="font-bold text-tomato">{formatTotal(items)}</p>
                   {!session.confirmed && can(role, "orders.take") && (
                     <button
                       type="button"

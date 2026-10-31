@@ -3,6 +3,7 @@ import {
   describeRate,
   formatPriceFor,
   parseBcvResponse,
+  grossCents,
   parsePricingSettings,
   pickRate,
   toVesCents,
@@ -33,6 +34,8 @@ describe("parsePricingSettings", () => {
       manualRateAt: "2026-11-02T10:00:00Z",
       label: "ref",
       menuPricesVisible: true,
+      vatPercent: 0,
+      pricesIncludeVat: false,
     });
   });
 
@@ -93,5 +96,22 @@ describe("parseBcvResponse", () => {
   it("valida la respuesta de /api/tasas", () => {
     expect(parseBcvResponse({ usd: 1, eur: 2, date: "2026-11-02" })?.eur).toBe(2);
     expect(parseBcvResponse({ usd: "1" })).toBeNull();
+  });
+});
+
+describe("IVA", () => {
+  it("calcula el importe con IVA por línea y redondea al céntimo", () => {
+    expect(grossCents(1750, 16)).toBe(2030);
+    expect(grossCents(2250, 16)).toBe(2610);
+    expect(grossCents(1000, 0)).toBe(1000);
+    expect(grossCents(333, 16)).toBe(386); // 386,28
+    expect(grossCents(1, 16)).toBe(1); // 1,16
+  });
+
+  it("lee el IVA del local y descarta valores raros", () => {
+    expect(parsePricingSettings({ vat_percent: "16.00", prices_include_vat: true })).toMatchObject({ vatPercent: 16, pricesIncludeVat: true });
+    expect(parsePricingSettings({ vat_percent: -5 }).vatPercent).toBe(0);
+    expect(parsePricingSettings({ vat_percent: 500 }).vatPercent).toBe(0);
+    expect(parsePricingSettings({}).pricesIncludeVat).toBe(false);
   });
 });

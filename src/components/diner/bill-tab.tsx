@@ -33,8 +33,8 @@ type Props = {
  * deja constancia de quién paga qué para que la cuenta se reparta sin discusiones.
  */
 export function BillTab({ sessionId, userId, seatId, items, payments, paymentItems, methods, instructions, onChanged }: Props) {
-  const { format } = usePricing();
-  const rows = coverage(items, paymentItems, payments);
+  const { format, vatPercent } = usePricing();
+  const rows = coverage(items, paymentItems, payments, vatPercent);
   const totals = billTotals(rows);
   const payable = payableRows(rows);
 
@@ -91,6 +91,13 @@ export function BillTab({ sessionId, userId, seatId, items, payments, paymentIte
         <Stat label="Por confirmar" value={format(totals.pending)} />
         <Stat label="Falta pagar" value={format(totals.remaining)} strong />
       </dl>
+
+      {vatPercent > 0 && (
+        <p className="mt-2 text-xs text-muted">
+          Incluye IVA ({vatPercent}%): subtotal {format(Math.round((totals.total * 100) / (100 + vatPercent)))} + IVA{" "}
+          {format(totals.total - Math.round((totals.total * 100) / (100 + vatPercent)))}.
+        </p>
+      )}
 
       {totals.remaining === 0 && totals.pending === 0 && (
         <p role="status" className="mt-3 rounded-xl bg-green-500/15 px-4 py-3 text-sm font-medium text-green-600">

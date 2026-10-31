@@ -23,7 +23,7 @@ type Line = { key: number; dish: DishWithOptions; values: PickerValues };
  * también pueden pedir: todo aparece en vivo en ambos lados.
  */
 export function StaffOrder() {
-  const { format } = usePricing();
+  const { format, gross } = usePricing();
   const restaurant = useRestaurant();
 
   const loader = useCallback(async () => {
@@ -66,11 +66,14 @@ export function StaffOrder() {
   const table = tables.find((t) => t.id === tableId);
   const needsSeat = restaurant.identification === "seat";
   const canSend = !!table && lines.length > 0 && (!needsSeat || seatId !== "");
+  // Total con IVA, sumando el importe con IVA de cada línea (como lo cobra la base de datos).
   const total = lines.reduce(
     (sum, l) =>
       sum +
-      (l.dish.price_cents + optionsDeltaCents(l.dish.dish_option_groups, l.values.optionIds)) *
-        Math.min(l.values.quantity, MAX_QUANTITY),
+      gross(
+        (l.dish.price_cents + optionsDeltaCents(l.dish.dish_option_groups, l.values.optionIds)) *
+          Math.min(l.values.quantity, MAX_QUANTITY),
+      ),
     0,
   );
 

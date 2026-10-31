@@ -25,7 +25,7 @@ const METHOD_LABEL = (m: string) => PAYMENT_METHOD_LABEL[m as PaymentMethod] ?? 
  */
 export function CajaBoard() {
   const restaurant = useRestaurant();
-  const { format, rate } = usePricing();
+  const { format, rate, vatPercent } = usePricing();
   const { role } = usePanel();
   const methods = parsePaymentMethods(restaurant.payment_methods);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +135,7 @@ export function CajaBoard() {
       {sessions.length === 0 && <p className="py-6 text-center text-muted">No hay mesas abiertas.</p>}
       <div className="grid gap-3 md:grid-cols-2">
         {sessions.map((s) => {
-          const rows = coverage(s.order_items, paymentItems.filter((pi) => pi.session_id === s.id), payments.filter((p) => p.session_id === s.id));
+          const rows = coverage(s.order_items, paymentItems.filter((pi) => pi.session_id === s.id), payments.filter((p) => p.session_id === s.id), vatPercent);
           const totals = billTotals(rows);
           const open = openId === s.id;
           const askedBill = billCalls.some((c) => c.session_id === s.id);

@@ -21,7 +21,16 @@ export type PricingSettings = {
   label: PriceLabel;
   /** Si los comensales ven los precios en el menú; si no, solo en la cuenta al cobrar. */
   menuPricesVisible: boolean;
+  /** IVA que se aplica, en porcentaje (0 = el local no lo cobra). Los precios se guardan SIN IVA. */
+  vatPercent: number;
+  /** Si el menú muestra los precios ya con IVA (true) o sin IVA y el IVA se suma en la cuenta (false). */
+  pricesIncludeVat: boolean;
 };
+
+/** Importe con IVA (por línea, redondeado al céntimo, igual que la base de datos). */
+export function grossCents(netCents: number, vatPercent: number): number {
+  return Math.round((netCents * (100 + vatPercent)) / 100);
+}
 
 /** Tasas oficiales del BCV (bolívares por unidad). */
 export type BcvRates = {
@@ -40,6 +49,8 @@ export const USD_ONLY: PricingSettings = {
   manualRateAt: null,
   label: "usd",
   menuPricesVisible: true,
+  vatPercent: 0,
+  pricesIncludeVat: false,
 };
 
 const RATE_SOURCE_LABEL: Record<RateSource, string> = {
@@ -51,7 +62,9 @@ const RATE_SOURCE_LABEL: Record<RateSource, string> = {
 /** Lee la configuración de precios que devuelven las funciones de la base de datos. */
 export function parsePricingSettings(json: unknown): PricingSettings {
   if (typeof json !== "object" || json === null || Array.isArray(json)) return USD_ONLY;
-  const { price_display, rate_source, manual_rate, manual_rate_at, price_label, menu_prices_visible } = json as Record<string, unknown>;
+  const { price_display, rate_source, manual_rate, manual_rate_at, price_label, menu_prices_visible, vat_percent, prices_include_vat } =
+    json as Record<string, unknown>;
+  const vat = Number(vat_percent);
   const display: PriceDisplay = price_display === "ves" || price_display === "both" ? price_display : "usd";
   const source: RateSource = rate_source === "bcv_eur" || rate_source === "manual" ? rate_source : "bcv_usd";
   const manualRate = typeof manual_rate === "number" ? manual_rate : typeof manual_rate === "string" ? Number(manual_rate) : null;
@@ -62,6 +75,8 @@ export function parsePricingSettings(json: unknown): PricingSettings {
     manualRateAt: typeof manual_rate_at === "string" ? manual_rate_at : null,
     label: price_label === "usd" || price_label === "eur" ? price_label : "ref",
     menuPricesVisible: menu_prices_visible !== false,
+    vatPercent: Number.isFinite(vat) && vat > 0 && vat <= 100 ? vat : 0,
+    pricesIncludeVat: prices_include_vat === true,
   };
 }
 

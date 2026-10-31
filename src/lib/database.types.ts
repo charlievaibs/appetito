@@ -146,6 +146,7 @@ export type Database = {
       };
       dish_options: {
         Row: {
+          diner_visible: boolean;
           available: boolean;
           group_id: string;
           id: string;
@@ -154,6 +155,7 @@ export type Database = {
           price_delta_cents: number;
         };
         Insert: {
+          diner_visible?: boolean;
           available?: boolean;
           group_id: string;
           id?: string;
@@ -162,6 +164,7 @@ export type Database = {
           price_delta_cents?: number;
         };
         Update: {
+          diner_visible?: boolean;
           available?: boolean;
           group_id?: string;
           id?: string;
@@ -481,6 +484,8 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          prices_include_vat: boolean;
+          vat_percent: number;
           menu_prices_visible: boolean;
           price_label: string;
           table_close: string;
@@ -507,6 +512,8 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          prices_include_vat?: boolean;
+          vat_percent?: number;
           menu_prices_visible?: boolean;
           price_label?: string;
           table_close?: string;
@@ -533,6 +540,8 @@ export type Database = {
           slug: string;
         };
         Update: {
+          prices_include_vat?: boolean;
+          vat_percent?: number;
           menu_prices_visible?: boolean;
           price_label?: string;
           table_close?: string;

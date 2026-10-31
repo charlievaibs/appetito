@@ -120,6 +120,7 @@ export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, o
                           onChange={() => toggle(group.id, option.id, group.kind === "single")}
                         />
                         {option.name}
+                        {!option.diner_visible && <span className="rounded-full bg-line px-2 py-0.5 text-[10px] text-muted">solo mesero</span>}
                       </span>
                       {option.price_delta_cents > 0 && formatMenu(option.price_delta_cents) !== null && (
                         <span className="text-sm text-muted">+{formatMenu(option.price_delta_cents)}</span>

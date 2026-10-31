@@ -6,7 +6,7 @@ import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { parsePaymentMethods, PAYMENT_METHOD_LABEL, PAYMENT_METHODS, type PaymentMethod } from "@/lib/payments";
 import { useBcvRates } from "@/lib/pricing";
-import { describeRate, formatPriceFor, type PriceDisplay, type PriceLabel, type PricingSettings, type RateSource } from "@/lib/rates";
+import { describeRate, formatPriceFor, grossCents, type PriceDisplay, type PriceLabel, type PricingSettings, type RateSource } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton, smallButton } from "./styles";
 
@@ -129,11 +129,13 @@ export function SettingsForm() {
   const [label, setLabel] = useState(restaurant.price_label as PriceLabel);
   const [menuPrices, setMenuPrices] = useState(restaurant.menu_prices_visible);
   const [tableClose, setTableClose] = useState(restaurant.table_close as TableClose);
+  const [vatPercent, setVatPercent] = useState(String(restaurant.vat_percent ?? 0));
+  const [includeVat, setIncludeVat] = useState(restaurant.prices_include_vat);
   const [rateSource, setRateSource] = useState(restaurant.rate_source as RateSource);
   const [manualRate, setManualRate] = useState(restaurant.manual_rate?.toString() ?? "");
   const { rates: bcv } = useBcvRates();
   /** Configuración de precios tal como quedaría, para el ejemplo en vivo. */
-  const preview: PricingSettings = { display, source: rateSource, manualRate: null, manualRateAt: null, label, menuPricesVisible: menuPrices };
+  const preview: PricingSettings = { display, source: rateSource, manualRate: null, manualRateAt: null, label, menuPricesVisible: menuPrices, vatPercent: Number(vatPercent.replace(",", ".")) || 0, pricesIncludeVat: includeVat };
   const [methods, setMethods] = useState<PaymentMethod[]>(parsePaymentMethods(restaurant.payment_methods));
   const [paymentInstructions, setPaymentInstructions] = useState(restaurant.payment_instructions ?? "");
   const [listed, setListed] = useState(restaurant.listed);
@@ -167,6 +169,11 @@ export function SettingsForm() {
       return;
     }
 
+    const vat = Number(vatPercent.replace(",", ".") || "0");
+    if (!Number.isFinite(vat) || vat < 0 || vat > 100) {
+      setError("El IVA debe ser un porcentaje entre 0 y 100 (por ejemplo 16).");
+      return;
+    }
     const manual = manualRate.trim() === "" ? null : Number(manualRate.trim().replace(",", "."));
     if (rateSource === "manual" && (manual === null || !Number.isFinite(manual) || manual <= 0)) {
       setError("Escribe una tasa válida en bolívares por dólar (por ejemplo 889,57).");
@@ -189,6 +196,8 @@ export function SettingsForm() {
         payment_instructions: paymentInstructions.trim() || null,
         price_display: display,
         price_label: label,
+        vat_percent: vat,
+        prices_include_vat: includeVat,
         menu_prices_visible: menuPrices,
         table_close: tableClose,
         rate_source: rateSource,
@@ -256,6 +265,38 @@ export function SettingsForm() {
         value={manualJoin}
         onChange={setManualJoin}
       />
+      <fieldset className={cardClass}>
+        <legend className="px-1 font-semibold">IVA</legend>
+        <p className="text-sm text-muted">
+          Escribe siempre tus precios <strong>sin IVA</strong> al agregar platos y extras: Appetito calcula el IVA. Pon 0 si tu local no lo cobra.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="s-vat" className="text-sm font-medium">
+              IVA (%)
+            </label>
+            <input id="s-vat" inputMode="decimal" value={vatPercent} onChange={(e) => setVatPercent(e.target.value)} className={`${inputClass} w-28`} />
+          </div>
+          <button type="button" className={smallButton} onClick={() => setVatPercent("16")}>
+            Usar 16 %
+          </button>
+        </div>
+        <label className="mt-4 flex items-start gap-3 text-sm">
+          <input type="checkbox" className="mt-1" checked={includeVat} onChange={(e) => setIncludeVat(e.target.checked)} />
+          <span>
+            <strong>Precios con IVA incluido</strong>
+            <span className="block text-muted">
+              Activado: el menú muestra cada precio ya con IVA. Desactivado: el menú muestra el precio sin IVA y el IVA se suma en la cuenta, al cobrar.
+            </span>
+          </span>
+        </label>
+        {Number(vatPercent.replace(",", ".")) > 0 && (
+          <p className="mt-3 rounded-xl bg-line px-3 py-2 text-sm">
+            Ejemplo: un plato de {formatPriceFor(1000, { ...preview, display: "usd" }, null)} sin IVA cuesta{" "}
+            <strong>{formatPriceFor(grossCents(1000, Number(vatPercent.replace(",", "."))), { ...preview, display: "usd" }, null)}</strong> con IVA.
+          </p>
+        )}
+      </fieldset>
       <Choices
         legend="¿Cómo se marcan los precios?"
         name="price-label"

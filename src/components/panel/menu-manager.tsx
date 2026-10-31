@@ -8,6 +8,7 @@ import { useRestaurant } from "@/lib/panel-context";
 import { slugify } from "@/lib/slug";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
+import { DishOptionsEditor } from "./dish-options-editor";
 import { cardClass, inputClass, primaryButton, secondaryButton, smallButton } from "./styles";
 
 type DishValues = {
@@ -23,9 +24,10 @@ type DishValues = {
  * (disponible o no) y borrado. Los precios se guardan en céntimos.
  */
 export function MenuManager() {
-  const { format } = usePricing();
+  const { format, gross, vatPercent } = usePricing();
   const restaurant = useRestaurant();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [extrasId, setExtrasId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,7 +141,10 @@ export function MenuManager() {
                         </p>
                         <p className="truncate text-sm text-muted">{d.description}</p>
                       </div>
-                      <span className="font-bold text-tomato">{format(d.price_cents)}</span>
+                      <span className="text-right font-bold text-tomato">
+                        {format(d.price_cents)}
+                        {vatPercent > 0 && <span className="block text-xs font-normal text-muted">con IVA {format(gross(d.price_cents))}</span>}
+                      </span>
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -151,6 +156,9 @@ export function MenuManager() {
                         <button type="button" className={smallButton} onClick={() => setEditingId(d.id)}>
                           Editar
                         </button>
+                        <button type="button" className={smallButton} onClick={() => setExtrasId(extrasId === d.id ? null : d.id)}>
+                          {extrasId === d.id ? "Cerrar extras" : "Extras"}
+                        </button>
                         <button
                           type="button"
                           className={`${smallButton} text-red-600`}
@@ -161,6 +169,7 @@ export function MenuManager() {
                       </div>
                     </div>
                   )}
+                  {extrasId === d.id && <DishOptionsEditor dishId={d.id} />}
                 </li>
               ))}
           </ul>
@@ -247,7 +256,7 @@ function DishForm({
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="d-price">
-          Precio (USD)
+          Precio (sin IVA)
         </label>
         <input
           id="d-price"
