@@ -5,6 +5,7 @@
 import type { Json } from "./database.types";
 import type { OrderingMode } from "./db";
 import type { Coordinates } from "./geo";
+import { parsePricingSettings, type PricingSettings } from "./rates";
 import { getSupabase } from "./supabase";
 
 export type DirectoryRestaurant = {
@@ -17,6 +18,8 @@ export type DirectoryRestaurant = {
   orderingMode: OrderingMode;
   /** Distancia en metros; null si no se conoce la ubicación de la persona o del restaurante. */
   distanceMeters: number | null;
+  /** Cómo muestra sus precios (dólares, bolívares o ambos) y con qué tasa. */
+  pricing: PricingSettings;
 };
 
 /** Convierte la respuesta de `list_restaurants`, descartando entradas mal formadas. */
@@ -36,6 +39,7 @@ export function parseDirectory(json: Json): DirectoryRestaurant[] {
         address: typeof address === "string" ? address : null,
         orderingMode: (typeof ordering_mode === "string" ? ordering_mode : "staff") as OrderingMode,
         distanceMeters: typeof distance_m === "number" ? distance_m : null,
+        pricing: parsePricingSettings(entry),
       },
     ];
   });

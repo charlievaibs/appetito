@@ -5,6 +5,8 @@ import { useCallback, useEffect } from "react";
 import { fetchSession, type SessionContext } from "@/lib/diner-api";
 import { clearSavedSession, loadSavedSession } from "@/lib/diner-session";
 import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
+import { PricingProvider } from "@/lib/pricing";
+import { parsePricingSettings, type PricingSettings } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { OpenTable } from "./open-table";
@@ -24,6 +26,8 @@ type TableData =
       changeRequests: ChangeRequest[];
       /** Código para que los acompañantes se unan a esta mesa sin esperar al mesero. */
       joinCode: string | null;
+      /** Cómo muestra sus precios este restaurante. */
+      pricing: PricingSettings;
     };
 
 /**
@@ -54,7 +58,7 @@ export function TableView() {
       return { kind: "closed", restaurantName: ctx.restaurant.name };
     }
 
-    const [dishes, items, requests, changeRequests, session] = await Promise.all([
+    const [dishes, items, requests, changeRequests, session, pricing] = await Promise.all([
       supabase
         .from("dishes")
         .select("*, dish_option_groups(*, dish_options(*))")
@@ -65,6 +69,7 @@ export function TableView() {
       supabase.from("service_requests").select("*").eq("session_id", ctx.sessionId).is("resolved_at", null),
       supabase.from("change_requests").select("*").eq("session_id", ctx.sessionId).order("created_at"),
       supabase.from("table_sessions").select("join_code").eq("id", ctx.sessionId).maybeSingle(),
+      supabase.rpc("restaurant_pricing", { p_restaurant_id: ctx.restaurant.id }),
     ]);
     return {
       kind: "open",
@@ -75,6 +80,7 @@ export function TableView() {
       requests: unwrap(requests),
       changeRequests: unwrap(changeRequests),
       joinCode: unwrap(session)?.join_code ?? null,
+      pricing: parsePricingSettings(unwrap(pricing)),
     };
   }, []);
 
@@ -146,7 +152,11 @@ export function TableView() {
     );
   }
 
-  return <OpenTable data={data} reload={reload} />;
+  return (
+    <PricingProvider settings={data.pricing}>
+      <OpenTable data={data} reload={reload} />
+    </PricingProvider>
+  );
 }
 
 function Notice({ emoji, title, text }: { emoji: string; title: string; text: string }) {

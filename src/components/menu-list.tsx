@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { DishWithOptions } from "@/lib/db";
-import { formatPrice } from "@/lib/money";
+import { usePricing } from "@/lib/pricing";
 
 /** Quita acentos y mayúsculas para que "pizza" encuentre "Pizzá". */
 function normalize(text: string): string {
@@ -21,6 +21,7 @@ type Props = {
  * el mesero (para tomar pedidos) y la página pública del restaurante (solo lectura).
  */
 export function MenuList({ dishes, onPick, pickLabel = "Agregar" }: Props) {
+  const { format } = usePricing();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export function MenuList({ dishes, onPick, pickLabel = "Agregar" }: Props) {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold leading-snug">{dish.name}</p>
                 <p className="line-clamp-2 text-sm text-muted">{dish.description}</p>
-                <p className="mt-1 font-bold text-tomato">{formatPrice(dish.price_cents)}</p>
+                <p className="mt-1 font-bold text-tomato">{format(dish.price_cents)}</p>
               </div>
               {onPick && (
                 <button

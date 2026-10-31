@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { usePanel } from "@/lib/panel-context";
+import { PricingProvider, RateNote } from "@/lib/pricing";
+import { parsePricingSettings } from "@/lib/rates";
 import { can, ROLE_LABEL, type Permission } from "@/lib/roles";
 import { AuthForm } from "./auth-form";
 import { CreateRestaurant } from "./create-restaurant";
@@ -101,7 +103,10 @@ function PanelShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <div className="mt-6">{children}</div>
+      <PricingProvider settings={parsePricingSettings(restaurant)}>
+        <div className="mt-6">{children}</div>
+        <RateNote className="mt-6 text-center print:hidden" />
+      </PricingProvider>
     </div>
   );
 }

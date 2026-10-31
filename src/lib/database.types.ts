@@ -415,6 +415,10 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          manual_rate: number | null;
+          manual_rate_at: string | null;
+          price_display: string;
+          rate_source: string;
           table_security: string;
           manual_join: string;
           address: string | null;
@@ -432,6 +436,10 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          manual_rate?: number | null;
+          manual_rate_at?: string | null;
+          price_display?: string;
+          rate_source?: string;
           table_security?: string;
           manual_join?: string;
           address?: string | null;
@@ -449,6 +457,10 @@ export type Database = {
           slug: string;
         };
         Update: {
+          manual_rate?: number | null;
+          manual_rate_at?: string | null;
+          price_display?: string;
+          rate_source?: string;
           table_security?: string;
           manual_join?: string;
           address?: string | null;
@@ -665,6 +677,7 @@ export type Database = {
         Args: { p_kind: string; p_session_id: string };
         Returns: string;
       };
+      restaurant_pricing: { Args: { p_restaurant_id: string }; Returns: Json };
       request_item_change: {
         Args: { p_changes: Json; p_item_id: string; p_message: string };
         Returns: string;

@@ -2,7 +2,8 @@
 
 import { useCallback, useState, type FormEvent } from "react";
 import type { DbDish } from "@/lib/db";
-import { formatPrice, parsePriceToCents } from "@/lib/money";
+import { parsePriceToCents } from "@/lib/money";
+import { usePricing } from "@/lib/pricing";
 import { useRestaurant } from "@/lib/panel-context";
 import { slugify } from "@/lib/slug";
 import { getSupabase } from "@/lib/supabase";
@@ -22,6 +23,7 @@ type DishValues = {
  * (disponible o no) y borrado. Los precios se guardan en céntimos.
  */
 export function MenuManager() {
+  const { format } = usePricing();
   const restaurant = useRestaurant();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -137,7 +139,7 @@ export function MenuManager() {
                         </p>
                         <p className="truncate text-sm text-muted">{d.description}</p>
                       </div>
-                      <span className="font-bold text-tomato">{formatPrice(d.price_cents)}</span>
+                      <span className="font-bold text-tomato">{format(d.price_cents)}</span>
                       <div className="flex gap-2">
                         <button
                           type="button"

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { DishWithOptions } from "@/lib/db";
-import { formatPrice } from "@/lib/money";
+import { usePricing } from "@/lib/pricing";
 import { optionsDeltaCents, validateSelection } from "@/lib/order-items";
 import { QuantityStepper } from "./quantity-stepper";
 
@@ -25,6 +25,7 @@ type Props = {
  * por el comensal como por el mesero.
  */
 export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, onRemove }: Props) {
+  const { format } = usePricing();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [quantity, setQuantity] = useState(initial?.quantity ?? 1);
   const [selected, setSelected] = useState<string[]>(initial?.optionIds ?? []);
@@ -121,7 +122,7 @@ export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, o
                         {option.name}
                       </span>
                       {option.price_delta_cents > 0 && (
-                        <span className="text-sm text-muted">+{formatPrice(option.price_delta_cents)}</span>
+                        <span className="text-sm text-muted">+{format(option.price_delta_cents)}</span>
                       )}
                     </label>
                   ))}
@@ -176,7 +177,7 @@ export function DishPicker({ dish, initial, confirmLabel, onConfirm, onCancel, o
               disabled={busy}
               className="inline-flex h-11 items-center rounded-full bg-tomato px-5 font-semibold text-white hover:bg-tomato-dark disabled:opacity-50"
             >
-              {confirmLabel} · {formatPrice(unitCents * quantity)}
+              {confirmLabel} · {format(unitCents * quantity)}
             </button>
           </div>
         </div>

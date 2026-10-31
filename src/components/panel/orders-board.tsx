@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import type { ChangeRequest, ItemStatus, JoinRequest, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
-import { formatPrice } from "@/lib/money";
+import { usePricing } from "@/lib/pricing";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { can } from "@/lib/roles";
@@ -31,6 +31,7 @@ function time(iso: string): string {
  * etapa. Se actualiza en vivo cuando un comensal o un compañero agrega o cambia algo.
  */
 export function OrdersBoard() {
+  const { format } = usePricing();
   const restaurant = useRestaurant();
   const { role } = usePanel();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -297,7 +298,7 @@ export function OrdersBoard() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-tomato">{formatPrice(itemsTotalCents(items))}</p>
+                  <p className="font-bold text-tomato">{format(itemsTotalCents(items))}</p>
                   {!session.confirmed && can(role, "orders.take") && (
                     <button
                       type="button"

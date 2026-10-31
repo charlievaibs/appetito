@@ -6,6 +6,7 @@ import { MenuList } from "@/components/menu-list";
 import { TablePicker } from "./table-picker";
 import type { DishWithOptions } from "@/lib/db";
 import { fetchDirectory } from "@/lib/directory";
+import { PricingProvider, RateNote } from "@/lib/pricing";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 
@@ -54,6 +55,7 @@ export function RestaurantPage({ slug }: { slug: string }) {
 
   const { restaurant, dishes } = data;
   return (
+    <PricingProvider settings={restaurant.pricing}>
     <div>
       <Link href="/app" className="text-sm font-medium text-muted hover:text-foreground">
         ← Todos los restaurantes
@@ -72,7 +74,9 @@ export function RestaurantPage({ slug }: { slug: string }) {
 
       <div className="mt-6">
         <MenuList dishes={dishes} />
+        <RateNote className="mt-3 text-center" />
       </div>
     </div>
+    </PricingProvider>
   );
 }

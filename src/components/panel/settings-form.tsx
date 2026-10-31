@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import type { ChangePolicy, Identification, ManualJoin, OrderingMode, TableSecurity } from "@/lib/db";
 import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
+import { useBcvRates } from "@/lib/pricing";
+import { describeRate, formatPriceFor, type PriceDisplay, type RateSource } from "@/lib/rates";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton, smallButton } from "./styles";
 
@@ -76,6 +78,18 @@ const SECURITIES: Choice<TableSecurity>[] = [
   },
 ];
 
+const DISPLAYS: Choice<PriceDisplay>[] = [
+  { value: "usd", title: "Solo dólares", text: "Los precios se muestran en dólares, como están guardados." },
+  { value: "both", title: "Dólares y bolívares", text: "Cada precio se muestra en dólares y en bolívares a la tasa elegida. Es lo más claro para el cliente." },
+  { value: "ves", title: "Solo bolívares", text: "Los precios se muestran únicamente en bolívares a la tasa elegida." },
+];
+
+const RATE_SOURCES: Choice<RateSource>[] = [
+  { value: "bcv_usd", title: "BCV dólar (oficial)", text: "Se consulta sola al Banco Central de Venezuela y se actualiza durante el día." },
+  { value: "bcv_eur", title: "BCV euro (oficial)", text: "Usa la tasa oficial del euro en bolívares, también consultada sola." },
+  { value: "manual", title: "La pongo yo", text: "Tú escribes la tasa y la actualizas cuando quieras. Útil si tu local usa otra referencia." },
+];
+
 const POLICIES: Choice<ChangePolicy>[] = [
   {
     value: "before_kitchen",
@@ -99,6 +113,10 @@ export function SettingsForm() {
   const [policy, setPolicy] = useState(restaurant.change_policy as ChangePolicy);
   const [manualJoin, setManualJoin] = useState(restaurant.manual_join as ManualJoin);
   const [security, setSecurity] = useState(restaurant.table_security as TableSecurity);
+  const [display, setDisplay] = useState(restaurant.price_display as PriceDisplay);
+  const [rateSource, setRateSource] = useState(restaurant.rate_source as RateSource);
+  const [manualRate, setManualRate] = useState(restaurant.manual_rate?.toString() ?? "");
+  const { rates: bcv } = useBcvRates();
   const [listed, setListed] = useState(restaurant.listed);
   const [description, setDescription] = useState(restaurant.description);
   const [city, setCity] = useState(restaurant.city ?? "");
@@ -130,6 +148,12 @@ export function SettingsForm() {
       return;
     }
 
+    const manual = manualRate.trim() === "" ? null : Number(manualRate.trim().replace(",", "."));
+    if (rateSource === "manual" && (manual === null || !Number.isFinite(manual) || manual <= 0)) {
+      setError("Escribe una tasa válida en bolívares por dólar (por ejemplo 889,57).");
+      return;
+    }
+
     setBusy(true);
     setError(null);
     setSaved(false);
@@ -142,6 +166,11 @@ export function SettingsForm() {
         change_policy: policy,
         manual_join: manualJoin,
         table_security: security,
+        price_display: display,
+        rate_source: rateSource,
+        manual_rate: manual,
+        // La fecha solo cambia si cambió la tasa: así se sabe de cuándo es.
+        ...(manual !== (restaurant.manual_rate ?? null) ? { manual_rate_at: new Date().toISOString() } : {}),
         listed,
         description: description.trim(),
         city: city.trim() || null,
@@ -203,6 +232,45 @@ export function SettingsForm() {
         value={manualJoin}
         onChange={setManualJoin}
       />
+      <Choices legend="¿Cómo se muestran los precios?" name="price-display" options={DISPLAYS} value={display} onChange={setDisplay} />
+      {display !== "usd" && (
+        <>
+          <Choices legend="¿Qué tasa se usa para los bolívares?" name="rate-source" options={RATE_SOURCES} value={rateSource} onChange={setRateSource} />
+          {rateSource === "manual" ? (
+            <div className={cardClass}>
+              <label htmlFor="s-rate" className="text-sm font-medium">
+                Tasa: bolívares por dólar
+              </label>
+              <input
+                id="s-rate"
+                inputMode="decimal"
+                placeholder="889,57"
+                value={manualRate}
+                onChange={(e) => setManualRate(e.target.value)}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-muted">
+                Recuerda actualizarla cuando cambie. Hoy el BCV publica: {bcv ? `dólar Bs ${bcv.usd.toLocaleString("es-VE")} · euro Bs ${bcv.eur.toLocaleString("es-VE")}` : "consultando…"}
+              </p>
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-line bg-card p-4 text-sm text-muted">
+              {describeRate({ display, source: rateSource, manualRate: null, manualRateAt: null }, bcv) ??
+                "No pudimos consultar al BCV ahora mismo; mientras tanto se mostrarán dólares. Puedes usar «La pongo yo»."}
+              {bcv && (
+                <>
+                  {" "}
+                  Ejemplo: un plato de $12,99 se verá{" "}
+                  <strong className="text-foreground">
+                    {formatPriceFor(1299, { display, source: rateSource, manualRate: null, manualRateAt: null }, rateSource === "bcv_eur" ? bcv.eur : bcv.usd)}
+                  </strong>
+                  .
+                </>
+              )}
+            </p>
+          )}
+        </>
+      )}
       <Choices
         legend="¿Hasta cuándo se puede cambiar un plato?"
         name="policy"

@@ -18,7 +18,7 @@ import {
 } from "@/lib/diner-api";
 import { clearSavedSession } from "@/lib/diner-session";
 import type { ChangeRequest, DishWithOptions, OrderItem, ServiceRequest } from "@/lib/db";
-import { formatPrice } from "@/lib/money";
+import { RateNote, usePricing } from "@/lib/pricing";
 import {
   canDinerEdit,
   describeChange,
@@ -28,6 +28,7 @@ import {
   latestRequestFor,
   parseOptions,
 } from "@/lib/order-items";
+import type { PricingSettings } from "@/lib/rates";
 import { SERVICE_LABEL, type ServiceKind } from "@/lib/tags";
 
 type Props = {
@@ -39,6 +40,7 @@ type Props = {
     requests: ServiceRequest[];
     changeRequests: ChangeRequest[];
     joinCode: string | null;
+    pricing: PricingSettings;
   };
   reload: () => Promise<void>;
 };
@@ -56,6 +58,7 @@ type Picking = { dish: DishWithOptions; editing?: OrderItem; asRequest?: boolean
  * la cocina no empiece) y lo que pide toda la mesa, todo sincronizado en vivo.
  */
 export function OpenTable({ data, reload }: Props) {
+  const { format } = usePricing();
   const { userId, ctx, dishes, items, requests, changeRequests, joinCode } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
@@ -242,7 +245,7 @@ export function OpenTable({ data, reload }: Props) {
                   Después, avisa a tu mesero.
                 </p>
                 <p className="mt-2 text-lg font-bold">
-                  Tu total <span className="text-tomato">{formatPrice(itemsTotalCents(myItems))}</span>
+                  Tu total <span className="text-tomato">{format(itemsTotalCents(myItems))}</span>
                 </p>
               </>
             }
@@ -257,7 +260,7 @@ export function OpenTable({ data, reload }: Props) {
             renderItem={(item) => <ItemCard key={item.id} item={item} showOwner />}
             footer={
               <p className="text-lg font-bold">
-                Total de la mesa <span className="text-tomato">{formatPrice(itemsTotalCents(items))}</span>
+                Total de la mesa <span className="text-tomato">{format(itemsTotalCents(items))}</span>
               </p>
             }
           />
@@ -284,7 +287,8 @@ export function OpenTable({ data, reload }: Props) {
         />
       )}
 
-      <p className="mt-8 text-center text-xs text-muted">
+      <RateNote className="mt-6 text-center" />
+      <p className="mt-4 text-center text-xs text-muted">
         ¿Eres del restaurante?{" "}
         <Link href="/panel" className="underline">
           Entra al panel
@@ -347,6 +351,7 @@ function ItemsSection({
   footer: React.ReactNode;
   groupKey?: (item: OrderItem) => string;
 }) {
+  const { format } = usePricing();
   if (items.length === 0) {
     return <p className="py-10 text-center text-muted">{emptyText}</p>;
   }
@@ -358,7 +363,7 @@ function ItemsSection({
           {name && (
             <h2 className="mb-2 flex items-center justify-between font-semibold">
               {name}
-              <span className="text-sm font-normal text-muted">{formatPrice(itemsTotalCents(group))}</span>
+              <span className="text-sm font-normal text-muted">{format(itemsTotalCents(group))}</span>
             </h2>
           )}
           <div className="flex flex-col gap-3">{group.map(renderItem)}</div>

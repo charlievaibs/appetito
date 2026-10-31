@@ -6,7 +6,7 @@ import { MenuList } from "@/components/menu-list";
 import { addItems } from "@/lib/diner-api";
 import type { DishWithOptions } from "@/lib/db";
 import { describeError } from "@/lib/errors";
-import { formatPrice } from "@/lib/money";
+import { usePricing } from "@/lib/pricing";
 import { MAX_QUANTITY, optionsDeltaCents } from "@/lib/order-items";
 import { useRestaurant } from "@/lib/panel-context";
 import { getSupabase } from "@/lib/supabase";
@@ -23,6 +23,7 @@ type Line = { key: number; dish: DishWithOptions; values: PickerValues };
  * también pueden pedir: todo aparece en vivo en ambos lados.
  */
 export function StaffOrder() {
+  const { format } = usePricing();
   const restaurant = useRestaurant();
 
   const loader = useCallback(async () => {
@@ -205,7 +206,7 @@ export function StaffOrder() {
           )}
 
           <p className="mt-4 text-lg font-bold">
-            Total <span className="text-tomato">{formatPrice(total)}</span>
+            Total <span className="text-tomato">{format(total)}</span>
           </p>
           <button type="submit" disabled={!canSend || busy} className={`mt-3 w-full ${primaryButton}`}>
             {busy ? "Enviando…" : "Enviar pedido"}
