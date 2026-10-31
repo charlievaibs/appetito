@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { ChangePolicy, Identification, OrderingMode } from "@/lib/db";
+import type { ChangePolicy, Identification, ManualJoin, OrderingMode } from "@/lib/db";
 import { getCurrentCoordinates } from "@/lib/geo";
 import { usePanel, useRestaurant } from "@/lib/panel-context";
 import { getSupabase } from "@/lib/supabase";
@@ -45,6 +45,24 @@ const IDENTIFICATIONS: Choice<Identification>[] = [
   },
 ];
 
+const MANUAL_JOINS: Choice<ManualJoin>[] = [
+  {
+    value: "open",
+    title: "Libres entran directo",
+    text: "El comensal elige su mesa y asiento en la app. Las mesas libres se toman al instante; las ocupadas o reservadas piden código o permiso del mesero.",
+  },
+  {
+    value: "approval",
+    title: "Con permiso del mesero",
+    text: "Quien elige mesa a mano espera a que un mesero le dé acceso (o use un código). Evita que alguien se siente sin estar en el local.",
+  },
+  {
+    value: "off",
+    title: "Solo con NFC o QR",
+    text: "No se puede elegir mesa a mano: hay que escanear o acercar el móvil a la etiqueta de la mesa.",
+  },
+];
+
 const POLICIES: Choice<ChangePolicy>[] = [
   {
     value: "before_kitchen",
@@ -66,6 +84,7 @@ export function SettingsForm() {
   const [mode, setMode] = useState(restaurant.ordering_mode as OrderingMode);
   const [identification, setIdentification] = useState(restaurant.identification as Identification);
   const [policy, setPolicy] = useState(restaurant.change_policy as ChangePolicy);
+  const [manualJoin, setManualJoin] = useState(restaurant.manual_join as ManualJoin);
   const [listed, setListed] = useState(restaurant.listed);
   const [description, setDescription] = useState(restaurant.description);
   const [city, setCity] = useState(restaurant.city ?? "");
@@ -107,6 +126,7 @@ export function SettingsForm() {
         ordering_mode: mode,
         identification,
         change_policy: policy,
+        manual_join: manualJoin,
         listed,
         description: description.trim(),
         city: city.trim() || null,
@@ -153,6 +173,13 @@ export function SettingsForm() {
         options={IDENTIFICATIONS}
         value={identification}
         onChange={setIdentification}
+      />
+      <Choices
+        legend="¿Puede el comensal elegir su mesa sin escanear?"
+        name="manual-join"
+        options={MANUAL_JOINS}
+        value={manualJoin}
+        onChange={setManualJoin}
       />
       <Choices
         legend="¿Hasta cuándo se puede cambiar un plato?"

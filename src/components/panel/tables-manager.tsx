@@ -33,6 +33,13 @@ export function useTables() {
   return useAsyncLoad(loader);
 }
 
+/** Código corto para una reserva, sin caracteres confusos (0/O, 1/I/L), fácil de dictar en voz alta. */
+function newReservationCode(): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
 /** Código nuevo e impredecible para un QR o etiqueta NFC (mismo formato que genera la base de datos). */
 function newToken(): string {
   return crypto.randomUUID().replaceAll("-", "");
@@ -224,6 +231,40 @@ function TableCard({
           Guardar
         </button>
       </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-medium">Código de reserva:</span>
+        {table.reservation_code ? (
+          <>
+            <code className="rounded-lg bg-line px-2 py-1 font-mono tracking-widest">{table.reservation_code}</code>
+            <button
+              type="button"
+              className={smallButton}
+              onClick={() =>
+                void run(supabase.from("dining_tables").update({ reservation_code: null }).eq("id", table.id))
+              }
+            >
+              Quitar
+            </button>
+          </>
+        ) : (
+          <span className="text-muted">sin reserva</span>
+        )}
+        <button
+          type="button"
+          className={smallButton}
+          onClick={() =>
+            void run(
+              supabase.from("dining_tables").update({ reservation_code: newReservationCode() }).eq("id", table.id),
+            )
+          }
+        >
+          {table.reservation_code ? "Generar otro" : "Generar código"}
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-muted">
+        Quien reservó (o tu mesero) comparte este código; con él, esa mesa se abre sin esperar permiso.
+      </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className={smallButton} onClick={() => setShowQr(!showQr)}>

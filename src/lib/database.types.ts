@@ -67,6 +67,7 @@ export type Database = {
       };
       dining_tables: {
         Row: {
+          reservation_code: string | null;
           active: boolean;
           capacity: number;
           created_at: string;
@@ -77,6 +78,7 @@ export type Database = {
           restaurant_id: string;
         };
         Insert: {
+          reservation_code?: string | null;
           active?: boolean;
           capacity?: number;
           created_at?: string;
@@ -87,6 +89,7 @@ export type Database = {
           restaurant_id: string;
         };
         Update: {
+          reservation_code?: string | null;
           active?: boolean;
           capacity?: number;
           created_at?: string;
@@ -229,6 +232,63 @@ export type Database = {
           },
         ];
       };
+      join_requests: {
+        Row: {
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          restaurant_id: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          seat_id: string | null;
+          session_id: string | null;
+          status: string;
+          table_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          restaurant_id: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          seat_id?: string | null;
+          session_id?: string | null;
+          status?: string;
+          table_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          restaurant_id?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          seat_id?: string | null;
+          session_id?: string | null;
+          status?: string;
+          table_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "join_requests_table_id_fkey";
+            columns: ["table_id"];
+            isOneToOne: false;
+            referencedRelation: "dining_tables";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "join_requests_seat_id_fkey";
+            columns: ["seat_id"];
+            isOneToOne: false;
+            referencedRelation: "seats";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       order_items: {
         Row: {
           added_by: string | null;
@@ -355,6 +415,7 @@ export type Database = {
       };
       restaurants: {
         Row: {
+          manual_join: string;
           address: string | null;
           change_policy: string;
           city: string | null;
@@ -370,6 +431,7 @@ export type Database = {
           slug: string;
         };
         Insert: {
+          manual_join?: string;
           address?: string | null;
           change_policy?: string;
           city?: string | null;
@@ -385,6 +447,7 @@ export type Database = {
           slug: string;
         };
         Update: {
+          manual_join?: string;
           address?: string | null;
           change_policy?: string;
           city?: string | null;
@@ -531,6 +594,7 @@ export type Database = {
       };
       table_sessions: {
         Row: {
+          join_code: string;
           closed_at: string | null;
           id: string;
           opened_at: string;
@@ -540,6 +604,7 @@ export type Database = {
           table_label: string;
         };
         Insert: {
+          join_code?: string;
           closed_at?: string | null;
           id?: string;
           opened_at?: string;
@@ -549,6 +614,7 @@ export type Database = {
           table_label: string;
         };
         Update: {
+          join_code?: string;
           closed_at?: string | null;
           id?: string;
           opened_at?: string;
@@ -625,6 +691,16 @@ export type Database = {
       join_session: {
         Args: { p_display_name?: string; p_seat_id?: string; p_token: string };
         Returns: Json;
+      };
+      cancel_join_request: { Args: { p_request_id: string }; Returns: undefined };
+      join_table_manual: {
+        Args: { p_code?: string; p_display_name?: string; p_seat_id?: string; p_table_id: string };
+        Returns: Json;
+      };
+      list_tables_for_join: { Args: { p_slug: string }; Returns: Json };
+      resolve_join_request: {
+        Args: { p_accept: boolean; p_request_id: string };
+        Returns: undefined;
       };
       list_restaurants: {
         Args: { p_lat?: number; p_limit?: number; p_lng?: number };

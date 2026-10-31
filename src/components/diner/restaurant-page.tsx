@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback } from "react";
 import { MenuList } from "@/components/menu-list";
+import { TablePicker } from "./table-picker";
 import type { DishWithOptions } from "@/lib/db";
 import { fetchDirectory } from "@/lib/directory";
 import { getSupabase } from "@/lib/supabase";
@@ -64,8 +65,10 @@ export function RestaurantPage({ slug }: { slug: string }) {
       <p className="mt-4 rounded-xl bg-tomato/10 px-4 py-3 text-sm">
         {restaurant.orderingMode === "staff"
           ? "Aquí te atiende un mesero. Puedes ver el menú antes de sentarte."
-          : "Para pedir, acerca tu móvil a la etiqueta NFC de tu mesa o escanea su QR."}
+          : "Para pedir, acerca tu móvil a la etiqueta NFC de tu mesa, escanea su QR o elige tu mesa abajo."}
       </p>
+
+      <TablePicker slug={slug} />
 
       <div className="mt-6">
         <MenuList dishes={dishes} />

@@ -13,6 +13,7 @@ export type DiningTable = Tables["dining_tables"]["Row"];
 export type Seat = Tables["seats"]["Row"];
 export type TableSession = Tables["table_sessions"]["Row"];
 export type OrderItem = Tables["order_items"]["Row"];
+export type JoinRequest = Tables["join_requests"]["Row"];
 export type ChangeRequest = Tables["change_requests"]["Row"];
 export type ServiceRequest = Tables["service_requests"]["Row"];
 export type DishOptionGroup = Tables["dish_option_groups"]["Row"];
@@ -29,6 +30,9 @@ export type OrderingMode = "staff" | "qr_optional" | "qr";
 
 /** Cómo se identifica a cada comensal. */
 export type Identification = "table" | "seat" | "reservation";
+
+/** Cómo se puede elegir mesa a mano: nunca, con aprobación del mesero, o directo si está libre. */
+export type ManualJoin = "off" | "approval" | "open";
 
 /** Hasta cuándo se puede cambiar un plato ya pedido. */
 export type ChangePolicy = "before_kitchen" | "until_ready";

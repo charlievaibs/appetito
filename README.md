@@ -48,6 +48,13 @@ al tocarlas el comensal entra a su mesa y avisa al personal. El NFC identifica; 
 Dentro de la mesa también hay botones de **llamar al mesero** y **pedir la cuenta**. Los avisos aparecen en vivo en el
 tablero del personal hasta que alguien los marca como atendidos (un solo aviso pendiente de cada tipo por mesa).
 
+## Elegir mesa a mano (sin NFC ni QR)
+
+Desde la ficha del restaurante el comensal puede **elegir su mesa y su asiento**, como butacas en un cine. Cada restaurante decide el modo
+en *Ajustes*: **libres entran directo**, **con permiso del mesero** o **solo con NFC/QR**. Las mesas ocupadas o reservadas se abren con un
+**código** (el de la reserva, que da el mesero o quien reservó, o el código de la mesa que muestra quien ya está sentado) o esperando a que
+el mesero dé acceso desde su tablero.
+
 ## Cómo se decide en qué restaurante estás
 
 En orden de fiabilidad: etiqueta NFC/QR de la mesa → mesa recordada en el dispositivo (abrir la app te lleva directo a pedir) →

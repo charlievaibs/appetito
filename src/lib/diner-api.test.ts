@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSessionContext } from "./diner-api";
+import { parseSessionContext, parseTablesForJoin } from "./diner-api";
 
 const valid = {
   session_id: "s1",
@@ -41,5 +41,27 @@ describe("parseSessionContext", () => {
   it("falla con una respuesta que no es un objeto", () => {
     expect(() => parseSessionContext("hola")).toThrow(/Respuesta inesperada/);
     expect(() => parseSessionContext({ ...valid, restaurant: null })).toThrow();
+  });
+});
+
+describe("parseTablesForJoin", () => {
+  it("lee mesas, estados y asientos", () => {
+    const parsed = parseTablesForJoin({
+      restaurant: { id: "r", name: "Demo", manual_join: "open" },
+      tables: [
+        { id: "t1", label: "Mesa 1", capacity: 4, status: "occupied", seats: [{ id: "s1", label: "A", taken: true }, { id: "s2", label: "B", taken: false }] },
+        { id: "t2", label: "Mesa 2", capacity: 2, status: "rara", seats: [] },
+        { label: "sin id" },
+      ],
+    });
+    expect(parsed?.manualJoin).toBe("open");
+    expect(parsed?.tables).toHaveLength(2);
+    expect(parsed?.tables[0].status).toBe("occupied");
+    expect(parsed?.tables[0].seats.map((s) => s.taken)).toEqual([true, false]);
+    expect(parsed?.tables[1].status).toBe("free");
+  });
+
+  it("devuelve null si el restaurante no permite elegir a mano", () => {
+    expect(parseTablesForJoin(null)).toBeNull();
   });
 });

@@ -207,3 +207,90 @@ export async function updateParticipant(
   });
   unwrapRpc(result);
 }
+
+/** Una mesa del restaurante tal como la ve quien elige dónde sentarse. */
+export type JoinTable = {
+  id: string;
+  label: string;
+  capacity: number;
+  /** libre, ocupada (hay una mesa abierta) o reservada (hace falta código o permiso del mesero). */
+  status: "free" | "occupied" | "reserved";
+  seats: { id: string; label: string; taken: boolean }[];
+};
+
+export type TablesForJoin = {
+  restaurantName: string;
+  manualJoin: "approval" | "open";
+  tables: JoinTable[];
+};
+
+/** Convierte la respuesta de `list_tables_for_join`; null si el restaurante no permite elegir mesa a mano. */
+export function parseTablesForJoin(json: Json): TablesForJoin | null {
+  if (typeof json !== "object" || json === null || Array.isArray(json)) return null;
+  const restaurant = asObject(json.restaurant, "restaurante");
+  const tables = Array.isArray(json.tables) ? json.tables : [];
+  return {
+    restaurantName: asString(restaurant.name, "nombre"),
+    manualJoin: restaurant.manual_join === "open" ? "open" : "approval",
+    tables: tables.flatMap((entry) => {
+      if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return [];
+      if (typeof entry.id !== "string" || typeof entry.label !== "string") return [];
+      const seats = Array.isArray(entry.seats) ? entry.seats : [];
+      const status = entry.status === "occupied" || entry.status === "reserved" ? entry.status : "free";
+      return [
+        {
+          id: entry.id,
+          label: entry.label,
+          capacity: typeof entry.capacity === "number" ? entry.capacity : seats.length,
+          status,
+          seats: seats.flatMap((s) =>
+            typeof s === "object" && s !== null && !Array.isArray(s) && typeof s.id === "string" && typeof s.label === "string"
+              ? [{ id: s.id, label: s.label, taken: s.taken === true }]
+              : [],
+          ),
+        },
+      ];
+    }),
+  };
+}
+
+/** Mesas del restaurante para elegir a mano (no requiere sesión). */
+export async function listTablesForJoin(slug: string): Promise<TablesForJoin | null> {
+  const result = await getSupabase().rpc("list_tables_for_join", { p_slug: slug });
+  return parseTablesForJoin(unwrapRpc(result));
+}
+
+export type ManualJoinResult =
+  | { status: "joined"; ctx: SessionContext }
+  | { status: "pending"; requestId: string };
+
+/**
+ * Elige mesa (y asiento) a mano. Con un código válido, o si la mesa está libre y el restaurante
+ * lo permite, entra directo; en otro caso queda pendiente de que el mesero dé acceso.
+ */
+export async function joinTableManual(
+  tableId: string,
+  options: { seatId?: string; displayName?: string; code?: string } = {},
+): Promise<ManualJoinResult> {
+  await ensureSignedIn();
+  const result = await getSupabase().rpc("join_table_manual", {
+    p_table_id: tableId,
+    p_seat_id: options.seatId,
+    p_display_name: options.displayName,
+    p_code: options.code,
+  });
+  const json = unwrapRpc(result);
+  const root = asObject(json, "acceso");
+  if (root.status === "pending") return { status: "pending", requestId: asString(root.request_id, "solicitud") };
+  return { status: "joined", ctx: parseSessionContext(json) };
+}
+
+/** Cancela una solicitud de acceso pendiente. */
+export async function cancelJoinRequest(requestId: string): Promise<void> {
+  unwrapRpc(await getSupabase().rpc("cancel_join_request", { p_request_id: requestId }));
+}
+
+/** Personal: da acceso a quien eligió una mesa a mano, o lo rechaza. */
+export async function resolveJoinRequest(requestId: string, accept: boolean): Promise<void> {
+  unwrapRpc(await getSupabase().rpc("resolve_join_request", { p_request_id: requestId, p_accept: accept }));
+}

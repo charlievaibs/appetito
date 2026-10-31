@@ -37,6 +37,7 @@ type Props = {
     items: OrderItem[];
     requests: ServiceRequest[];
     changeRequests: ChangeRequest[];
+    joinCode: string | null;
   };
   reload: () => Promise<void>;
 };
@@ -54,7 +55,7 @@ type Picking = { dish: DishWithOptions; editing?: OrderItem; asRequest?: boolean
  * la cocina no empiece) y lo que pide toda la mesa, todo sincronizado en vivo.
  */
 export function OpenTable({ data, reload }: Props) {
-  const { userId, ctx, dishes, items, requests, changeRequests } = data;
+  const { userId, ctx, dishes, items, requests, changeRequests, joinCode } = data;
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("menu");
   const [picking, setPicking] = useState<Picking | null>(null);
@@ -161,6 +162,12 @@ export function OpenTable({ data, reload }: Props) {
             Salir de la mesa
           </button>
         </div>
+        {joinCode && (
+          <p className="mt-3 text-sm text-muted">
+            ¿Vienes con más gente? Que se unan con el código{" "}
+            <span className="font-mono font-semibold tracking-widest text-foreground">{joinCode}</span>
+          </p>
+        )}
         <SeatEditor ctx={ctx} highlight={needsSeat} onSaved={reload} />
       </header>
 

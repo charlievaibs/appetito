@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatusBadge } from "@/components/status-badge";
-import type { ChangeRequest, ItemStatus, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
+import type { ChangeRequest, ItemStatus, JoinRequest, OrderItem, ServiceRequest, TableSession } from "@/lib/db";
 import { describeError } from "@/lib/errors";
 import { formatPrice } from "@/lib/money";
 import { itemsTotalCents, parseOptions } from "@/lib/order-items";
@@ -83,9 +83,30 @@ export function OrdersBoard() {
   );
   const { data: changes, reload: reloadChanges } = useAsyncLoad(changesLoader);
 
+  // Personas que eligieron una mesa a mano y esperan que el mesero les dé acceso.
+  const joinsLoader = useCallback(
+    async (): Promise<(JoinRequest & { table_label: string; seat_label: string | null })[]> => {
+      const rows = unwrap(
+        await getSupabase()
+          .from("join_requests")
+          .select("*, dining_tables(label), seats(label)")
+          .eq("restaurant_id", restaurant.id)
+          .eq("status", "pending")
+          .order("created_at"),
+      );
+      return rows.map((r) => ({
+        ...r,
+        table_label: r.dining_tables?.label ?? "Mesa",
+        seat_label: r.seats?.label ?? null,
+      }));
+    },
+    [restaurant.id],
+  );
+  const { data: joins, reload: reloadJoins } = useAsyncLoad(joinsLoader);
+
   const reload = useCallback(async () => {
-    await Promise.all([reloadSessions(), reloadRequests(), reloadChanges()]);
-  }, [reloadSessions, reloadRequests, reloadChanges]);
+    await Promise.all([reloadSessions(), reloadRequests(), reloadChanges(), reloadJoins()]);
+  }, [reloadSessions, reloadRequests, reloadChanges, reloadJoins]);
 
   // Tiempo real: platos, mesas y avisos del restaurante.
   useEffect(() => {
@@ -100,6 +121,11 @@ export function OrdersBoard() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "table_sessions", filter: `restaurant_id=eq.${restaurant.id}` },
+        () => void reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "join_requests", filter: `restaurant_id=eq.${restaurant.id}` },
         () => void reload(),
       )
       .on(
@@ -131,6 +157,12 @@ export function OrdersBoard() {
   /** Acepta o rechaza un cambio pedido por un comensal (lanza si falla; se adapta al formato de run). */
   const resolveItemChange = async (id: string, accept: boolean) => {
     const { error } = await getSupabase().rpc("resolve_item_change", { p_request_id: id, p_accept: accept });
+    return { error };
+  };
+
+  /** Da acceso a quien eligió una mesa a mano, o lo rechaza. */
+  const resolveJoin = async (id: string, accept: boolean) => {
+    const { error } = await getSupabase().rpc("resolve_join_request", { p_request_id: id, p_accept: accept });
     return { error };
   };
 
@@ -188,6 +220,30 @@ export function OrdersBoard() {
           ))}
         </section>
       )}
+      {joins && joins.length > 0 && can(role, "orders.take") && (
+        <section aria-label="Quieren sentarse" className="mb-4 flex flex-col gap-2">
+          {joins.map((j) => (
+            <div key={j.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-green-500/50 bg-green-500/10 px-4 py-3">
+              <p className="font-semibold">
+                🪑 {j.display_name || "Un comensal"} quiere sentarse en {j.table_label}
+                {j.seat_label ? ` · ${j.seat_label}` : ""}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-8 items-center rounded-full bg-tomato px-3 text-xs font-semibold text-white hover:bg-tomato-dark"
+                  onClick={() => void run(resolveJoin(j.id, true))}
+                >
+                  Dar acceso
+                </button>
+                <button type="button" className={smallButton} onClick={() => void run(resolveJoin(j.id, false))}>
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
       {changes && changes.length > 0 && can(role, "orders.take") && (
         <section aria-label="Cambios pedidos" className="mb-4 flex flex-col gap-2">
           {changes.map((c) => {
@@ -235,7 +291,9 @@ export function OrdersBoard() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-bold">{session.table_label}</h2>
-                  <p className="text-xs text-muted">Abierta a las {time(session.opened_at)}</p>
+                  <p className="text-xs text-muted">
+                    Abierta a las {time(session.opened_at)} · código <span className="font-mono font-semibold tracking-widest">{session.join_code}</span>
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-tomato">{formatPrice(itemsTotalCents(items))}</p>
