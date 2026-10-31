@@ -11,12 +11,14 @@ import { cardClass, inputClass, primaryButton, secondaryButton, smallButton } fr
 
 export type TableWithSeats = DiningTable & { seats: Seat[] };
 
+/** Ordena las mesas de forma natural ("Mesa 2" antes que "Mesa 10") y sus puestos por posición. */
 export function sortTables(tables: TableWithSeats[]): TableWithSeats[] {
   return tables
     .map((t) => ({ ...t, seats: [...t.seats].sort((a, b) => a.position - b.position) }))
     .sort((a, b) => a.label.localeCompare(b.label, "es", { numeric: true }));
 }
 
+/** Carga las mesas del restaurante activo con sus puestos. */
 export function useTables() {
   const restaurant = useRestaurant();
   const loader = useCallback(async () => {
@@ -31,10 +33,15 @@ export function useTables() {
   return useAsyncLoad(loader);
 }
 
+/** Código nuevo e impredecible para un QR o etiqueta NFC (mismo formato que genera la base de datos). */
 function newToken(): string {
   return crypto.randomUUID().replaceAll("-", "");
 }
 
+/**
+ * Gestión de mesas y puestos: alta, reserva, activar/desactivar, ver o regenerar sus
+ * códigos QR/NFC y eliminar. Los códigos abren /m/<código>, la entrada del comensal.
+ */
 export function TablesManager() {
   const restaurant = useRestaurant();
   const { data: tables, error: loadError, reload } = useTables();
@@ -155,6 +162,7 @@ export function TablesManager() {
   );
 }
 
+/** Tarjeta de una mesa. `run` ejecuta una operación de Supabase y recarga la lista. */
 function TableCard({
   table,
   run,

@@ -28,6 +28,12 @@ type PanelContextValue = {
 
 const PanelContext = createContext<PanelContextValue | null>(null);
 
+/**
+ * Mantiene la sesión del personal y la lista de sus restaurantes para todo el panel.
+ * Escucha los cambios de sesión de Supabase (entrar, salir, renovar) y recarga.
+ * Los restaurantes los filtra la base de datos: solo llegan aquellos de los que la
+ * persona es miembro.
+ */
 export function PanelProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PanelState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -9,6 +9,7 @@ export function qrLink(token: string): string {
   return `${window.location.origin}/m/${token}`;
 }
 
+/** Dibuja un código QR. Se genera en el propio navegador, sin enviar la dirección a ningún servicio. */
 export function QrImage({
   value,
   size = 160,

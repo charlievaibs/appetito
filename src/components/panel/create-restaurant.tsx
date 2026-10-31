@@ -6,6 +6,11 @@ import { slugify } from "@/lib/slug";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton, secondaryButton } from "./styles";
 
+/**
+ * Primer paso tras crear la cuenta: dar de alta el restaurante. Se hace con la
+ * función `create_restaurant`, que además deja a esta persona como dueña.
+ * El identificador (slug) se propone a partir del nombre y se puede cambiar.
+ */
 export function CreateRestaurant() {
   const { reload, signOut } = usePanel();
   const [name, setName] = useState("");

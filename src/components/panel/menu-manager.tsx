@@ -17,6 +17,10 @@ type DishValues = {
   emoji: string;
 };
 
+/**
+ * Edición del menú: platos agrupados por categoría con alta, edición, pausa
+ * (disponible o no) y borrado. Los precios se guardan en céntimos.
+ */
 export function MenuManager() {
   const restaurant = useRestaurant();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -164,6 +168,7 @@ export function MenuManager() {
   );
 }
 
+/** Formulario para crear un plato o editar uno existente (`initial`). */
 function DishForm({
   initial,
   categories,

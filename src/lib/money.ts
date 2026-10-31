@@ -3,6 +3,7 @@ const usd = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
+/** Da formato de dinero a un importe en céntimos: 1299 → "$12.99". */
 export function formatPrice(cents: number): string {
   return usd.format(cents / 100);
 }

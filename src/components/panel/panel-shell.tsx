@@ -16,6 +16,10 @@ const links = [
   { href: "/panel/ajustes", label: "Ajustes" },
 ];
 
+/**
+ * Puerta del panel: según el estado de la sesión muestra la carga, un error, el
+ * formulario de entrada, la creación del primer restaurante o el panel completo.
+ */
 export function PanelGate({ children }: { children: ReactNode }) {
   const { state, restaurant } = usePanel();
 
@@ -34,6 +38,7 @@ export function PanelGate({ children }: { children: ReactNode }) {
   return <PanelShell>{children}</PanelShell>;
 }
 
+/** Marco del panel: restaurante activo, correo, menú de secciones y botón de salir. */
 function PanelShell({ children }: { children: ReactNode }) {
   const { state, restaurant, selectRestaurant, signOut } = usePanel();
   const pathname = usePathname();

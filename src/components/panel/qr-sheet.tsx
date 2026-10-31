@@ -6,6 +6,10 @@ import { useRestaurant } from "@/lib/panel-context";
 import { primaryButton, secondaryButton } from "./styles";
 import { useTables } from "./tables-manager";
 
+/**
+ * Hoja imprimible con el QR de cada mesa y de cada puesto. Los códigos son los mismos
+ * que se pueden grabar en etiquetas NFC: ambos abren la misma dirección.
+ */
 export function QrSheet() {
   const restaurant = useRestaurant();
   const { data: tables, error } = useTables();
@@ -48,6 +52,7 @@ export function QrSheet() {
   );
 }
 
+/** Una pieza de la hoja: el QR con el nombre de la mesa o del puesto. */
 function Tile({ title, subtitle, token }: { title: string; subtitle: string; token: string }) {
   return (
     <figure className="break-inside-avoid rounded-2xl border border-line bg-white p-4 text-center text-black">

@@ -1,42 +1,52 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { QuantityStepper } from "@/components/quantity-stepper";
+import { DishPicker, type PickerValues } from "@/components/dish-picker";
+import { MenuList } from "@/components/menu-list";
+import { addItems } from "@/lib/diner-api";
+import type { DishWithOptions } from "@/lib/db";
+import { describeError } from "@/lib/errors";
 import { formatPrice } from "@/lib/money";
+import { MAX_QUANTITY, optionsDeltaCents } from "@/lib/order-items";
 import { useRestaurant } from "@/lib/panel-context";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
-import { cardClass, inputClass, primaryButton } from "./styles";
+import { cardClass, inputClass, primaryButton, smallButton } from "./styles";
 import { sortTables } from "./tables-manager";
 
+/** Un plato elegido por el mesero que aún no se ha enviado. */
+type Line = { key: number; dish: DishWithOptions; values: PickerValues };
+
+/**
+ * Toma de pedido del mesero. Elige mesa (y opcionalmente puesto y nombre), agrega
+ * platos con sus ajustes y los envía a la misma mesa en la que los comensales
+ * también pueden pedir: todo aparece en vivo en ambos lados.
+ */
 export function StaffOrder() {
   const restaurant = useRestaurant();
 
   const loader = useCallback(async () => {
     const supabase = getSupabase();
     const [tables, dishes] = await Promise.all([
-      supabase
-        .from("dining_tables")
-        .select("*, seats(*)")
-        .eq("restaurant_id", restaurant.id)
-        .eq("active", true),
+      supabase.from("dining_tables").select("*, seats(*)").eq("restaurant_id", restaurant.id).eq("active", true),
       supabase
         .from("dishes")
-        .select("*")
+        .select("*, dish_option_groups(*, dish_options(*))")
         .eq("restaurant_id", restaurant.id)
         .eq("available", true)
         .order("position")
         .order("name"),
     ]);
-    return { tables: sortTables(unwrap(tables)), dishes: unwrap(dishes) };
+    return { tables: sortTables(unwrap(tables)), dishes: unwrap(dishes) as DishWithOptions[] };
   }, [restaurant.id]);
   const { data, error: loadError } = useAsyncLoad(loader);
 
   const [tableId, setTableId] = useState("");
   const [seatId, setSeatId] = useState("");
   const [dinerName, setDinerName] = useState("");
-  const [note, setNote] = useState("");
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [lines, setLines] = useState<Line[]>([]);
+  const [picking, setPicking] = useState<DishWithOptions | null>(null);
+  const [nextKey, setNextKey] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -53,10 +63,15 @@ export function StaffOrder() {
 
   const { tables, dishes } = data;
   const table = tables.find((t) => t.id === tableId);
-  const lines = dishes.filter((d) => (quantities[d.id] ?? 0) > 0);
-  const total = lines.reduce((sum, d) => sum + d.price_cents * (quantities[d.id] ?? 0), 0);
   const needsSeat = restaurant.identification === "seat";
   const canSend = !!table && lines.length > 0 && (!needsSeat || seatId !== "");
+  const total = lines.reduce(
+    (sum, l) =>
+      sum +
+      (l.dish.price_cents + optionsDeltaCents(l.dish.dish_option_groups, l.values.optionIds)) *
+        Math.min(l.values.quantity, MAX_QUANTITY),
+    0,
+  );
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -64,23 +79,24 @@ export function StaffOrder() {
     setBusy(true);
     setError(null);
     setSent(false);
-    const { error } = await getSupabase().rpc("staff_place_order", {
-      p_table_id: tableId,
-      p_items: lines.map((d) => ({ dish_id: d.id, quantity: quantities[d.id] })),
-      p_seat_id: seatId || undefined,
-      p_diner_name: dinerName || undefined,
-      p_note: note || undefined,
-    });
-    setBusy(false);
-    if (error) {
-      setError(error.message);
-      return;
+    try {
+      // Abre (o recupera) la sesión de la mesa y agrega todos los platos de una vez.
+      const { data: sessionId, error } = await getSupabase().rpc("staff_open_session", { p_table_id: tableId });
+      if (error) throw new Error(describeError(error.message));
+      await addItems(
+        sessionId,
+        lines.map((l) => ({ dishId: l.dish.id, ...l.values })),
+        { seatId: seatId || undefined, forName: dinerName || undefined },
+      );
+      setSent(true);
+      setLines([]);
+      setDinerName("");
+      setSeatId("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo enviar el pedido.");
+    } finally {
+      setBusy(false);
     }
-    setSent(true);
-    setQuantities({});
-    setNote("");
-    setDinerName("");
-    setSeatId("");
   }
 
   return (
@@ -146,64 +162,86 @@ export function StaffOrder() {
         </div>
       </div>
 
-      {dishes.length === 0 ? (
-        <p className="py-8 text-center text-muted">No hay platos disponibles. Añádelos en Menú.</p>
-      ) : (
-        <ul className="mt-4 grid gap-2 md:grid-cols-2">
-          {dishes.map((d) => (
-            <li key={d.id} className={`${cardClass} flex items-center gap-3`}>
-              <span className="text-2xl" aria-hidden="true">
-                {d.emoji}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{d.name}</p>
-                <p className="text-sm text-tomato">{formatPrice(d.price_cents)}</p>
-              </div>
-              <QuantityStepper
-                value={quantities[d.id] ?? 0}
-                min={0}
-                label={`Cantidad de ${d.name}`}
-                onChange={(q) => {
-                  setSent(false);
-                  setQuantities((prev) => ({ ...prev, [d.id]: q }));
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+        <div>
+          {dishes.length === 0 ? (
+            <p className="py-8 text-center text-muted">No hay platos disponibles. Añádelos en Menú.</p>
+          ) : (
+            <MenuList dishes={dishes} onPick={setPicking} />
+          )}
+        </div>
 
-      <div className={`${cardClass} mt-4`}>
-        <label htmlFor="so-note" className="text-sm font-medium">
-          Nota para cocina (opcional)
-        </label>
-        <input
-          id="so-note"
-          maxLength={300}
-          placeholder="Sin cebolla, punto medio…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className={inputClass}
-        />
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-lg font-bold">
+        <aside className={`${cardClass} h-fit`} aria-label="Platos por enviar">
+          <h2 className="font-semibold">Por enviar</h2>
+          {lines.length === 0 ? (
+            <p className="mt-2 text-sm text-muted">Elige platos del menú.</p>
+          ) : (
+            <ul className="mt-2 flex flex-col gap-2">
+              {lines.map((l) => (
+                <li key={l.key} className="rounded-xl border border-line px-3 py-2 text-sm">
+                  <p className="font-medium">
+                    {l.values.quantity}× {l.dish.name}
+                  </p>
+                  {l.values.optionIds.length > 0 && (
+                    <p className="text-xs text-muted">
+                      {l.dish.dish_option_groups
+                        .flatMap((g) => g.dish_options)
+                        .filter((o) => l.values.optionIds.includes(o.id))
+                        .map((o) => o.name)
+                        .join(", ")}
+                    </p>
+                  )}
+                  {l.values.note && <p className="text-xs text-muted">📝 {l.values.note}</p>}
+                  <button
+                    type="button"
+                    className="mt-1 text-xs text-red-600 underline"
+                    onClick={() => setLines((prev) => prev.filter((x) => x.key !== l.key))}
+                  >
+                    Quitar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <p className="mt-4 text-lg font-bold">
             Total <span className="text-tomato">{formatPrice(total)}</span>
           </p>
-          <button type="submit" disabled={!canSend || busy} className={primaryButton}>
-            {busy ? "Enviando…" : "Enviar a cocina"}
+          <button type="submit" disabled={!canSend || busy} className={`mt-3 w-full ${primaryButton}`}>
+            {busy ? "Enviando…" : "Enviar pedido"}
           </button>
-        </div>
-        {error && (
-          <p role="alert" className="mt-2 text-sm text-red-600">
-            {error}
-          </p>
-        )}
-        {sent && (
-          <p role="status" className="mt-2 text-sm text-green-600">
-            ¡Pedido enviado a cocina!
-          </p>
-        )}
+          {lines.length > 0 && (
+            <button type="button" className={`mt-2 w-full ${smallButton}`} onClick={() => setLines([])}>
+              Vaciar
+            </button>
+          )}
+          {error && (
+            <p role="alert" className="mt-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+          {sent && (
+            <p role="status" className="mt-2 text-sm text-green-600">
+              ¡Pedido enviado! Ya está en el tablero y en el móvil de los comensales.
+            </p>
+          )}
+        </aside>
       </div>
+
+      {picking && (
+        <DishPicker
+          key={picking.id}
+          dish={picking}
+          confirmLabel="Agregar"
+          onConfirm={async (values) => {
+            setLines((prev) => [...prev, { key: nextKey, dish: picking, values }]);
+            setNextKey((k) => k + 1);
+            setSent(false);
+            setPicking(null);
+          }}
+          onCancel={() => setPicking(null)}
+        />
+      )}
     </form>
   );
 }

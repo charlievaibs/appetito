@@ -40,8 +40,11 @@ export default function Home() {
           <a href="#descargar" className="hover:text-foreground">
             Descargar
           </a>
-          <Link href="/menu" className="font-semibold text-tomato">
+          <Link href="/app" className="font-semibold text-tomato">
             Abrir app
+          </Link>
+          <Link href="/panel" className="hover:text-foreground">
+            Soy un restaurante
           </Link>
         </nav>
       </header>
@@ -63,7 +66,7 @@ export default function Home() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <DownloadButton />
             <Link
-              href="/menu"
+              href="/app"
               className="inline-flex h-12 items-center justify-center rounded-full border border-line px-6 font-medium transition-colors hover:bg-card"
             >
               Abrir en el navegador

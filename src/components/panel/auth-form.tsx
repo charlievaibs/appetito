@@ -4,6 +4,10 @@ import { useState, type FormEvent } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton } from "./styles";
 
+/**
+ * Entrar o crear cuenta con correo y contraseña (Supabase Auth). Si el proyecto
+ * exige confirmar el correo, al crear la cuenta se avisa de que hay que abrirlo.
+ */
 export function AuthForm() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
