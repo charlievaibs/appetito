@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Appetito — Pide lo que se te antoja",
+  title: "Appetito — Pide a tu manera",
   description:
-    "Explora el menú y arma tu pedido en un toque. Gratis, en la web y en Android.",
+    "Pide, ajusta tu plato y llama al mesero desde tu móvil. Sin cuenta, sin descargas y sin esperas.",
   applicationName: "Appetito",
   icons: {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],

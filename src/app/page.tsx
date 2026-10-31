@@ -61,7 +61,7 @@ const advantages = [
 
 const steps = [
   { n: "1", title: "Entra a tu mesa", text: "Escanea el QR, acerca el móvil a la etiqueta NFC o elige tu mesa en la app. Sin crear cuenta." },
-  { n: "2", title: "Pide a tu manera", text: "Elige del menú y ajusta tu plato: sin salsa, extra de queso…" },
+  { n: "2", title: "Pide y ajusta", text: "Elige del menú y ajusta tu plato: sin salsa, extra de queso…" },
   { n: "3", title: "Cambia hasta que cocina empiece", text: "Tu pedido queda guardado y tu mesero lo ve en vivo." },
 ];
 
@@ -118,7 +118,7 @@ export default function Home() {
       <main className="flex-1">
         <section className="mx-auto w-full max-w-5xl px-6 pb-16 pt-12 text-center sm:pt-20">
           <p className="mb-4 inline-block rounded-full bg-tomato/10 px-3 py-1 text-sm font-medium text-tomato">
-            Pide lo que se te antoja
+            Pide a tu manera
           </p>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
             Tu menú favorito,
