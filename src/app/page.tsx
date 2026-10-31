@@ -1,6 +1,5 @@
 import Link from "next/link";
-
-const APK_URL = process.env.NEXT_PUBLIC_APK_URL;
+import { RELEASE, SIGNING_CERT_SHA256 } from "@/lib/release";
 
 const features = [
   {
@@ -128,6 +127,7 @@ export default function Home() {
             <div className="mt-8 flex justify-center">
               <DownloadButton inverted />
             </div>
+            <ApkVerification />
           </div>
         </section>
       </main>
@@ -143,7 +143,7 @@ function DownloadButton({ inverted = false }: { inverted?: boolean }) {
   const base =
     "inline-flex h-12 items-center justify-center rounded-full px-6 font-semibold transition-colors";
 
-  if (!APK_URL) {
+  if (!RELEASE) {
     return (
       <span
         aria-disabled="true"
@@ -158,7 +158,8 @@ function DownloadButton({ inverted = false }: { inverted?: boolean }) {
 
   return (
     <a
-      href={APK_URL}
+      // Siempre la ruta propia: allí el archivo se verifica antes de entregarse.
+      href="/descargar"
       className={`${base} ${
         inverted
           ? "bg-white text-tomato hover:bg-white/90"
@@ -167,5 +168,31 @@ function DownloadButton({ inverted = false }: { inverted?: boolean }) {
     >
       Descargar para Android
     </a>
+  );
+}
+
+/** Cómo comprobar que el archivo descargado es el oficial (huella SHA-256 y firma). */
+function ApkVerification() {
+  if (!RELEASE) return null;
+  return (
+    <details className="mx-auto mt-6 max-w-xl text-left text-sm text-white/90">
+      <summary className="cursor-pointer text-center font-medium">
+        Versión {RELEASE.version} · cómo comprobar que es el archivo oficial
+      </summary>
+      <p className="mt-3">
+        Descárgalo solo desde esta página. Si quieres verificarlo, la huella SHA-256 del archivo debe ser:
+      </p>
+      <code className="mt-2 block break-all rounded-xl bg-black/25 p-3 text-xs">{RELEASE.sha256}</code>
+      <p className="mt-2 text-white/80">
+        En Windows: <code>certutil -hashfile appetito-{RELEASE.version}.apk SHA256</code>. En Linux o Mac:{" "}
+        <code>sha256sum appetito-{RELEASE.version}.apk</code>.
+      </p>
+      {SIGNING_CERT_SHA256 && (
+        <>
+          <p className="mt-3">La app oficial siempre está firmada con el certificado cuya huella SHA-256 es:</p>
+          <code className="mt-2 block break-all rounded-xl bg-black/25 p-3 text-xs">{SIGNING_CERT_SHA256}</code>
+        </>
+      )}
+    </details>
   );
 }

@@ -17,7 +17,11 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: "#16100d",
+    // Endurecimiento: nada de contenido mixto ni depuración remota del WebView en la app publicada.
+    allowMixedContent: false,
+    webContentsDebuggingEnabled: false,
   },
+  loggingBehavior: "none",
 };
 
 export default config;
