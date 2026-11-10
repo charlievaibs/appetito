@@ -1,0 +1,57 @@
+name: Salud de producción
+
+# Una vez al día comprueba que la web, la API y la base de datos respondan. La consulta a la base
+# también cuenta como actividad: evita que Supabase pause el proyecto por inactividad (plan gratuito).
+# Si algo falla, la ejecución falla y GitHub avisa por correo. No usa acciones de terceros ni secretos.
+on:
+  schedule:
+    - cron: "17 13 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  salud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITIO: https://getappetito.vercel.app
+    steps:
+      - name: Comprobar web, API y base de datos
+        shell: bash
+        run: |
+          fallos=0
+
+          # Reintenta 3 veces (con pausa) antes de dar un fallo por bueno: evita falsas alarmas por un parpadeo.
+          comprobar() {
+            local nombre="$1" url="$2" esperado="$3" extra="${4:-}"
+            local codigo cuerpo
+            for intento in 1 2 3; do
+              cuerpo="$(mktemp)"
+              codigo="$(curl -sS -o "$cuerpo" -w '%{http_code}' --max-time 20 ${extra:+-H "$extra"} "$url" || echo 000)"
+              if [[ "$codigo" == "$esperado" ]] && { [[ -z "${5:-}" ]] || grep -q "$5" "$cuerpo"; }; then
+                echo "OK    $nombre ($codigo)"
+                return 0
+              fi
+              echo "..    $nombre: intento $intento dio $codigo"
+              sleep 15
+            done
+            echo "FALLO $nombre: se esperaba $esperado y llegó $codigo"
+            fallos=$((fallos + 1))
+          }
+
+          # La portada y la página pública del restaurante de demostración.
+          comprobar "Portada" "$SITIO/" 200
+          comprobar "Restaurante demo" "$SITIO/r/demo" 200
+
+          # Con una clave falsa la API debe responder 401 «invalid_api_key»: eso prueba que la web llega a la
+          # base de datos y que esta ejecuta la consulta. Un 502 significa que la base no responde.
+          comprobar "API y base de datos" "$SITIO/api/v1/menu" 401 "Authorization: Bearer apt_comprobacion_de_salud" "invalid_api_key"
+
+          # OData público de metadatos (no toca la base).
+          comprobar "OData" "$SITIO/api/v1/odata/\$metadata" 200
+
+          if [[ "$fallos" -gt 0 ]]; then
+            echo "::error::$fallos comprobación(es) fallaron. Revisa Vercel y Supabase."
+            exit 1
+          fi
