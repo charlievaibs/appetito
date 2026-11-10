@@ -55,6 +55,7 @@ reales. Idea, concepto y desarrollo actual de **Carlos González**.
 - **IVA calculado por la app:** el local escribe sus precios sin IVA y decide si el menú los muestra con IVA incluido o si se suma en la cuenta.
 - **Extras por plato:** el dueño o gerente define los extras; el comensal ve los básicos y el mesero agrega cualquier otro con su precio.
 - **Inventario:** artículos con stock, mínimos, costo y un historial de movimientos; pensado para tablet o monitor.
+- **Recetas por plato:** el inventario se descuenta solo cuando cocina empieza a preparar el plato, con costo y margen por porción.
 - **Carga masiva:** importar y exportar menú e inventario con Excel o CSV, con vista previa; **API REST** y **OData** (Excel, Power BI) con claves revocables.
 - **Gestión del equipo:** sumar gente con un enlace, QR o código (cualquier rol), crear la cuenta de un empleado, suspender o dar de baja con confirmación, ver quién atiende cada mesa y su rendimiento.
 - Para el equipo: salón con las mesas en pantalla, pantalla de cocina, tablero de pedidos, menú con opciones, mesas y QR/NFC, equipo con roles y ajustes.

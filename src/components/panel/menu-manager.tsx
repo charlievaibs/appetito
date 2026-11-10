@@ -9,6 +9,8 @@ import { slugify } from "@/lib/slug";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { DishOptionsEditor } from "./dish-options-editor";
+import { recipeCostCents, recipeMargin } from "@/lib/recipes";
+import { DishRecipeEditor } from "./dish-recipe-editor";
 import { ImportExport } from "./import-export";
 import { cardClass, inputClass, primaryButton, secondaryButton, smallButton } from "./styles";
 
@@ -29,6 +31,7 @@ export function MenuManager() {
   const restaurant = useRestaurant();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [extrasId, setExtrasId] = useState<string | null>(null);
+  const [recipeId, setRecipeId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +48,19 @@ export function MenuManager() {
     [restaurant.id],
   );
   const { data: dishes, error: loadError, reload } = useAsyncLoad(loader);
+
+  // Recetas y artículos del inventario: para mostrar costo y margen y editar la receta de cada plato.
+  const recipeLoader = useCallback(async () => {
+    const supabase = getSupabase();
+    const [items, lines] = await Promise.all([
+      supabase.from("inventory_items").select("*").eq("restaurant_id", restaurant.id).order("name"),
+      supabase.from("dish_ingredients").select("*").eq("restaurant_id", restaurant.id),
+    ]);
+    return { items: unwrap(items), lines: unwrap(lines) };
+  }, [restaurant.id]);
+  const { data: recipes, reload: reloadRecipes } = useAsyncLoad(recipeLoader);
+  const itemsById = new Map((recipes?.items ?? []).map((i) => [i.id, i]));
+  const recipeOf = (dishId: string) => (recipes?.lines ?? []).filter((l) => l.dish_id === dishId);
 
   const categories = Array.from(new Set((dishes ?? []).map((d) => d.category)));
 
@@ -152,6 +168,14 @@ export function MenuManager() {
                           {d.name}
                         </p>
                         <p className="truncate text-sm text-muted">{d.description}</p>
+                        {recipeOf(d.id).length > 0 && (
+                          <RecipeSummary
+                            priceCents={d.price_cents}
+                            lines={recipeOf(d.id)}
+                            items={itemsById}
+                            format={format}
+                          />
+                        )}
                       </div>
                       <span className="text-right font-bold text-tomato">
                         {format(d.price_cents)}
@@ -171,6 +195,9 @@ export function MenuManager() {
                         <button type="button" className={smallButton} onClick={() => setExtrasId(extrasId === d.id ? null : d.id)}>
                           {extrasId === d.id ? "Cerrar extras" : "Extras"}
                         </button>
+                        <button type="button" className={smallButton} onClick={() => setRecipeId(recipeId === d.id ? null : d.id)}>
+                          {recipeId === d.id ? "Cerrar receta" : "Receta"}
+                        </button>
                         <button
                           type="button"
                           className={`${smallButton} text-red-600`}
@@ -182,12 +209,47 @@ export function MenuManager() {
                     </div>
                   )}
                   {extrasId === d.id && <DishOptionsEditor dishId={d.id} />}
+                  {recipeId === d.id && recipes && (
+                    <DishRecipeEditor
+                      key={`${d.id}-${recipeOf(d.id).map((l) => `${l.item_id}:${l.quantity}`).join(",")}`}
+                      dishId={d.id}
+                      priceCents={d.price_cents}
+                      items={recipes.items}
+                      initial={recipeOf(d.id).map((l) => ({ item_id: l.item_id, quantity: l.quantity }))}
+                      onSaved={() => void reloadRecipes()}
+                    />
+                  )}
                 </li>
               ))}
           </ul>
         </section>
       ))}
     </div>
+  );
+}
+
+/** Una línea bajo el plato con el costo de su receta y el margen (sin IVA). */
+function RecipeSummary({
+  priceCents,
+  lines,
+  items,
+  format,
+}: {
+  priceCents: number;
+  lines: { item_id: string; quantity: number }[];
+  items: Map<string, { id: string; cost_cents: number }>;
+  format: (cents: number) => string;
+}) {
+  const cost = recipeCostCents(lines, items);
+  const margin = recipeMargin(priceCents, cost);
+  return (
+    <p className="text-xs text-muted">
+      Receta de {lines.length} ingrediente{lines.length === 1 ? "" : "s"} · costo {format(cost)} · ganancia{" "}
+      <span className={margin.cents < 0 ? "font-semibold text-red-600" : ""}>
+        {format(margin.cents)}
+        {margin.percent !== null && ` (${margin.percent} %)`}
+      </span>
+    </p>
   );
 }
 

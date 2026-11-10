@@ -250,6 +250,17 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      dish_ingredients: {
+        Row: {
+          dish_id: string;
+          item_id: string;
+          quantity: number;
+          restaurant_id: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       inventory_items: {
         Row: {
           active: boolean;
@@ -349,6 +360,7 @@ export type Database = {
           added_by_staff: boolean;
           base_price_cents: number;
           changed_after_start: boolean;
+          stock_consumed_qty: number;
           created_at: string;
           dish_id: string | null;
           dish_name: string;
@@ -370,6 +382,7 @@ export type Database = {
           added_by_staff?: boolean;
           base_price_cents: number;
           changed_after_start?: boolean;
+          stock_consumed_qty?: number;
           created_at?: string;
           dish_id?: string | null;
           dish_name: string;
@@ -391,6 +404,7 @@ export type Database = {
           added_by_staff?: boolean;
           base_price_cents?: number;
           changed_after_start?: boolean;
+          stock_consumed_qty?: number;
           created_at?: string;
           dish_id?: string | null;
           dish_name?: string;
@@ -849,6 +863,10 @@ export type Database = {
         Returns: Json;
       };
       import_menu: { Args: { p_restaurant_id: string; p_rows: Json }; Returns: Json };
+      set_dish_recipe: {
+        Args: { p_dish_id: string; p_lines: Json };
+        Returns: number;
+      };
       revoke_api_key: { Args: { p_key_id: string }; Returns: undefined };
       accept_invites: { Args: never; Returns: number };
       invite_member: {
