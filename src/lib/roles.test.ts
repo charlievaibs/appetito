@@ -68,6 +68,14 @@ describe("cerrar mesas", () => {
     expect(canCloseTable(null, "staff")).toBe(false);
   });
 
+  it("el inventario: cocina ajusta stock pero solo dueño y gerente lo editan", () => {
+    expect(can("kitchen", "inventory.adjust")).toBe(true);
+    expect(can("kitchen", "inventory.edit")).toBe(false);
+    expect(can("manager", "inventory.edit")).toBe(true);
+    expect(can("waiter", "inventory.adjust")).toBe(false);
+    expect(can(null, "inventory.adjust")).toBe(false);
+  });
+
   it("solo caja, gerente y dueño cierran con deuda", () => {
     expect(canForceClose("cashier")).toBe(true);
     expect(canForceClose("waiter")).toBe(false);

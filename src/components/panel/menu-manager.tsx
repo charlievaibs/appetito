@@ -9,6 +9,7 @@ import { slugify } from "@/lib/slug";
 import { getSupabase } from "@/lib/supabase";
 import { unwrap, useAsyncLoad } from "@/lib/use-async-load";
 import { DishOptionsEditor } from "./dish-options-editor";
+import { ImportExport } from "./import-export";
 import { cardClass, inputClass, primaryButton, secondaryButton, smallButton } from "./styles";
 
 type DishValues = {
@@ -93,6 +94,17 @@ export function MenuManager() {
         <p role="alert" className="mb-3 text-sm text-red-600">
           {shownError}
         </p>
+      )}
+
+      {dishes && (
+        <ImportExport
+          kind="menu"
+          existingKeys={new Set(dishes.map((d) => d.slug))}
+          exportRows={() =>
+            dishes.map((d) => [d.slug, d.name, d.category, d.price_cents / 100, d.description, d.emoji, d.available ? "si" : "no"])
+          }
+          onImported={() => void reload()}
+        />
       )}
 
       {adding && (

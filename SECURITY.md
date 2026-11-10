@@ -75,6 +75,15 @@ Se intentó romper cada defensa; todas resistieron.
 - **Crear cuentas de empleados:** la hace una Edge Function de Supabase (`create-staff`). La clave de administración solo existe allí; la función exige una sesión real de dueño o gerente y comprueba en la base de datos que pueda administrar ese rol. Sin sesión o con un token falso responde 401 (probado). La contraseña temporal se entrega una vez y la persona debe cambiarla al entrar.
 - **Bajas:** exigen escribir el nombre o el correo de la persona (lo verifica la base de datos), nunca dejan al restaurante sin dueño y quedan en un registro de actividad. Suspender es reversible.
 
+## API pública y claves
+
+- **Claves:** 24 bytes aleatorios (`apt_…`); en la base solo se guarda su huella SHA-256, nunca la clave. Se muestra una sola vez al crearla. Se pueden revocar y hay un máximo de 10 activas por local.
+- **Alcance:** cada clave pertenece a un restaurante y solo ve y cambia sus datos; las de solo lectura no pueden escribir. La comprobación ocurre en la base (`private.api_auth`), no en la web.
+- **Transporte:** la clave solo viaja en la cabecera `Authorization` (Bearer o Basic); no se acepta por la URL, para que no quede en registros. Las respuestas no se guardan en caché.
+- **Entrada:** cuerpo máximo de 2 MB y 2000 filas; cada fila se valida y falla por separado. Las consultas OData se resuelven en memoria con una lista cerrada de campos y funciones, sin construir SQL con el texto recibido.
+- **Archivos Excel:** se leen sin ejecutar nada (solo XML); se limitan tamaño, hojas y filas, y se descomprime solo lo necesario. Al exportar, las celdas que parecen fórmulas se neutralizan.
+- **Límite conocido:** todavía no hay límite de peticiones por clave. Con 192 bits de entropía adivinar una clave no es viable, pero una clave filtrada podría saturar el servicio hasta que se revoque.
+
 ## Verificar un APK a mano
 
 ```bash

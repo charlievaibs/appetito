@@ -19,6 +19,8 @@ export type Permission =
   | "payments.manage"
   | "tables.edit"
   | "menu.edit"
+  | "inventory.edit"
+  | "inventory.adjust"
   | "settings.edit"
   | "team.manage";
 
@@ -50,6 +52,8 @@ const PERMISSIONS: Record<Permission, readonly Role[]> = {
   "payments.manage": ["owner", "manager", "host", "waiter", "cashier"],
   "tables.edit": ["owner", "manager", "host"],
   "menu.edit": ["owner", "manager"],
+  "inventory.edit": ["owner", "manager"],
+  "inventory.adjust": ["owner", "manager", "kitchen"],
   "settings.edit": ["owner", "manager"],
   "team.manage": ["owner", "manager"],
 };

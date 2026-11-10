@@ -235,6 +235,57 @@ export type Database = {
           },
         ];
       };
+      api_keys: {
+        Row: {
+          can_write: boolean;
+          created_at: string;
+          id: string;
+          last_used_at: string | null;
+          name: string;
+          prefix: string;
+          restaurant_id: string;
+          revoked_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      inventory_items: {
+        Row: {
+          active: boolean;
+          category: string;
+          cost_cents: number;
+          created_at: string;
+          id: string;
+          min_stock: number;
+          name: string;
+          restaurant_id: string;
+          sku: string;
+          stock: number;
+          unit: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      inventory_movements: {
+        Row: {
+          created_at: string;
+          delta: number;
+          id: string;
+          item_id: string;
+          note: string | null;
+          reason: string;
+          restaurant_id: string;
+          source: string;
+          stock_after: number;
+          user_id: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       join_requests: {
         Row: {
           created_at: string;
@@ -777,6 +828,28 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      adjust_inventory: {
+        Args: { p_delta: number; p_item_id: string; p_note?: string; p_reason: string };
+        Returns: number;
+      };
+      api_inventory_adjust: {
+        Args: { p_delta: number; p_key: string; p_note?: string; p_reason: string; p_sku: string };
+        Returns: number;
+      };
+      api_inventory_list: { Args: { p_key: string }; Returns: Json };
+      api_inventory_upsert: { Args: { p_key: string; p_rows: Json }; Returns: Json };
+      api_menu_list: { Args: { p_key: string }; Returns: Json };
+      api_menu_upsert: { Args: { p_key: string; p_rows: Json }; Returns: Json };
+      create_api_key: {
+        Args: { p_can_write: boolean; p_name: string; p_restaurant_id: string };
+        Returns: string;
+      };
+      import_inventory: {
+        Args: { p_restaurant_id: string; p_rows: Json; p_source?: string };
+        Returns: Json;
+      };
+      import_menu: { Args: { p_restaurant_id: string; p_rows: Json }; Returns: Json };
+      revoke_api_key: { Args: { p_key_id: string }; Returns: undefined };
       accept_invites: { Args: never; Returns: number };
       invite_member: {
         Args: { p_email: string; p_restaurant_id: string; p_role: string };

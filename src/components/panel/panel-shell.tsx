@@ -21,7 +21,9 @@ const links: { href: string; label: string; permission: Permission }[] = [
   { href: "/panel/nuevo-pedido", label: "Tomar pedido", permission: "orders.take" },
   { href: "/panel/mesas", label: "Mesas", permission: "tables.edit" },
   { href: "/panel/menu", label: "Menú", permission: "menu.edit" },
+  { href: "/panel/inventario", label: "Inventario", permission: "inventory.adjust" },
   { href: "/panel/equipo", label: "Equipo", permission: "team.manage" },
+  { href: "/panel/integraciones", label: "Integraciones", permission: "settings.edit" },
   { href: "/panel/ajustes", label: "Ajustes", permission: "settings.edit" },
 ];
 

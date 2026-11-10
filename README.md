@@ -54,6 +54,8 @@ reales. Idea, concepto y desarrollo actual de **Carlos González**.
 - **Cuenta de la mesa y pagos:** cada comensal indica si paga lo suyo, toda la mesa o platos concretos, con qué método (efectivo, pago móvil, punto, transferencia, Zelle), y el mesero o caja lo confirma. Caja ve lo cobrado del día por método.
 - **IVA calculado por la app:** el local escribe sus precios sin IVA y decide si el menú los muestra con IVA incluido o si se suma en la cuenta.
 - **Extras por plato:** el dueño o gerente define los extras; el comensal ve los básicos y el mesero agrega cualquier otro con su precio.
+- **Inventario:** artículos con stock, mínimos, costo y un historial de movimientos; pensado para tablet o monitor.
+- **Carga masiva:** importar y exportar menú e inventario con Excel o CSV, con vista previa; **API REST** y **OData** (Excel, Power BI) con claves revocables.
 - **Gestión del equipo:** sumar gente con un enlace, QR o código (cualquier rol), crear la cuenta de un empleado, suspender o dar de baja con confirmación, ver quién atiende cada mesa y su rendimiento.
 - Para el equipo: salón con las mesas en pantalla, pantalla de cocina, tablero de pedidos, menú con opciones, mesas y QR/NFC, equipo con roles y ajustes.
 - Instalarla como app en Android e iPhone (PWA).

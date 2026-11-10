@@ -38,6 +38,10 @@ const MESSAGES: Record<string, string> = {
   already_member: "Esa persona ya forma parte del equipo.",
   invalid_email: "Escribe un correo válido.",
   auth_required: "Necesitas una sesión para continuar.",
+  item_not_found: "Ese artículo ya no existe en el inventario.",
+  invalid_reason: "Ese motivo de movimiento no es válido.",
+  rows_must_be_array: "El archivo no tiene el formato esperado.",
+  too_many_rows: "Demasiadas filas en una sola carga.",
 };
 
 /** Devuelve un mensaje en español para un error de Supabase o de la red. */
