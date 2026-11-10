@@ -1,5 +1,9 @@
 import Link from "next/link";
+import { RotatingWord } from "@/components/rotating-word";
 import { RELEASE, SIGNING_CERT_SHA256 } from "@/lib/release";
+
+/** Platos que pasan en la cinta de la portada. */
+const ribbon = ["🍕 Pizza", "🍔 Hamburguesa", "🌮 Tacos", "🍝 Pasta", "🥗 Ensalada", "🍣 Sushi", "🍟 Papas", "🥩 Parrilla", "🍰 Postre", "☕ Café", "🍹 Cócteles", "🫓 Arepas"];
 
 /** Qué obtiene quien come. */
 const dinerFeatures = [
@@ -89,7 +93,7 @@ const faqs = [
 export default function Home() {
   return (
     <>
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-5">
+      <header className="nav-pill sticky top-3 z-30 mx-auto mt-3 flex w-[calc(100%-1.5rem)] max-w-5xl items-center justify-between gap-4 rounded-full px-5 py-2.5">
         <a href="#" className="text-xl font-bold tracking-tight text-tomato">
           appetito
         </a>
@@ -111,7 +115,7 @@ export default function Home() {
           </Link>
           <Link
             href="/app"
-            className="inline-flex h-10 items-center rounded-full bg-tomato px-5 font-semibold text-white hover:bg-tomato-dark"
+            className="press inline-flex h-10 items-center rounded-full bg-tomato px-5 font-semibold text-white hover:bg-tomato-dark"
           >
             Abrir app
           </Link>
@@ -119,32 +123,53 @@ export default function Home() {
       </header>
 
       <main className="flex-1">
-        <section className="mx-auto w-full max-w-5xl px-6 pb-16 pt-12 text-center sm:pt-20">
-          <p className="mb-4 inline-block rounded-full bg-tomato/10 px-3 py-1 text-sm font-medium text-tomato">
-            Pide a tu manera
-          </p>
-          <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Tu menú favorito,
-            <br />
-            <span className="text-tomato">a un toque de distancia.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted">
-            Pide, ajusta tu plato y llama al mesero desde tu móvil. Sin cuenta, sin descargas y sin esperas.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/app"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-tomato px-6 font-semibold text-white transition-colors hover:bg-tomato-dark"
-            >
-              Abrir Appetito
-            </Link>
-            <Link
-              href="/panel"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-line px-6 font-medium transition-colors hover:bg-card"
-            >
-              Tengo un restaurante
-            </Link>
-            <DownloadButton />
+        <section className="relative isolate overflow-hidden">
+          <div aria-hidden="true">
+            <span className="blob -left-24 top-0 h-56 w-56 bg-tomato sm:h-80 sm:w-80" />
+            <span className="blob -right-20 top-24 h-48 w-48 bg-saffron sm:h-72 sm:w-72" style={{ animationDelay: "-5s" }} />
+            <span className="blob bottom-0 left-1/3 h-40 w-40 bg-leaf opacity-25 sm:h-64 sm:w-64" style={{ animationDelay: "-9s" }} />
+            <span className="float-food left-[7%] top-24 hidden text-5xl sm:block">🍕</span>
+            <span className="float-food right-[9%] top-20 hidden text-5xl sm:block" style={{ animationDelay: "-2s" }}>🍔</span>
+            <span className="float-food bottom-16 left-[14%] hidden text-4xl sm:block" style={{ animationDelay: "-4s" }}>🌮</span>
+            <span className="float-food bottom-20 right-[13%] hidden text-4xl sm:block" style={{ animationDelay: "-1s" }}>🍹</span>
+          </div>
+          <div className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20 pt-16 text-center sm:pt-24">
+            <p className="rise mb-5 inline-block rounded-full border border-line bg-card/70 px-4 py-1.5 text-sm font-medium backdrop-blur">
+              <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-leaf align-middle" />
+              Pide a tu manera
+            </p>
+            <h1 className="rise rise-2 mx-auto max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-7xl">
+              Hoy se te antoja
+              <br />
+              <RotatingWord words={["una pizza.", "una hamburguesa.", "unos tacos.", "una pasta.", "un postre.", "un café."]} />
+            </h1>
+            <p className="rise rise-3 mx-auto mt-6 max-w-xl text-lg text-muted">
+              Pide, ajusta tu plato y llama al mesero desde tu móvil. Sin cuenta, sin descargas y sin esperas.
+            </p>
+            <div className="rise rise-4 mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/app"
+                className="press inline-flex h-12 items-center justify-center rounded-full bg-tomato px-7 font-semibold text-white shadow-lg shadow-tomato/30 hover:bg-tomato-dark"
+              >
+                Abrir Appetito
+              </Link>
+              <Link
+                href="/panel"
+                className="press inline-flex h-12 items-center justify-center rounded-full border border-line bg-card/70 px-6 font-medium backdrop-blur hover:border-tomato"
+              >
+                Tengo un restaurante
+              </Link>
+              <DownloadButton />
+            </div>
+          </div>
+          <div className="marquee-wrap relative overflow-hidden border-y border-line bg-card/60 py-3 backdrop-blur" aria-hidden="true">
+            <div className="marquee">
+              {[...ribbon, ...ribbon].map((item, i) => (
+                <span key={i} className="whitespace-nowrap rounded-full border border-line bg-card px-4 py-1.5 text-sm font-medium">
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -167,7 +192,7 @@ export default function Home() {
           <ol className="grid gap-6 sm:grid-cols-3">
             {steps.map((s) => (
               <li key={s.n} className="text-center">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-tomato text-lg font-bold text-white">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-tomato to-saffron text-lg font-bold text-white shadow-lg shadow-tomato/25">
                   {s.n}
                 </span>
                 <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
@@ -203,7 +228,7 @@ export default function Home() {
         <Section id="ventajas" title="Ventajas de usarlo">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {advantages.map((a) => (
-              <div key={a.title} className="rounded-2xl border border-line bg-card p-5">
+              <div key={a.title} className="lift rounded-2xl border border-line bg-card p-5">
                 <h3 className="font-semibold text-tomato">{a.title}</h3>
                 <p className="mt-1 text-sm text-muted">{a.text}</p>
               </div>
@@ -255,7 +280,7 @@ export default function Home() {
         </Section>
 
         <section id="descargar" className="mx-auto w-full max-w-5xl scroll-mt-8 px-6 py-16">
-          <div className="rounded-3xl bg-tomato px-6 py-14 text-center text-white">
+          <div className="rounded-3xl bg-gradient-to-br from-tomato via-[#f2622b] to-saffron px-6 py-14 text-center text-white">
             <h2 className="text-3xl font-bold tracking-tight">Llévalo en tu bolsillo</h2>
             <p className="mx-auto mt-3 max-w-md text-white/85">
               Instálala desde el navegador: sin tienda de apps, sin descargas raras y se actualiza sola.
@@ -306,9 +331,9 @@ function Section({
 }) {
   return (
     <section id={id} className="mx-auto w-full max-w-5xl scroll-mt-8 px-6 py-14">
-      <h2 className="text-center text-3xl font-bold tracking-tight">{title}</h2>
+      <h2 className="reveal text-center text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h2>
       {intro && <p className="mx-auto mt-3 max-w-2xl text-center text-muted">{intro}</p>}
-      <div className="mt-10">{children}</div>
+      <div className="reveal mt-10">{children}</div>
     </section>
   );
 }
@@ -317,8 +342,8 @@ function CardGrid({ items }: { items: { icon: string; title: string; text: strin
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <div key={item.title} className="rounded-2xl border border-line bg-card p-5">
-          <p className="text-2xl" aria-hidden="true">
+        <div key={item.title} className="lift rounded-2xl border border-line bg-card p-5">
+          <p className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-tomato/10 text-2xl" aria-hidden="true">
             {item.icon}
           </p>
           <h3 className="mt-2 font-semibold">{item.title}</h3>
@@ -347,7 +372,7 @@ function ListCard({ title, items, muted = false }: { title: string; items: strin
 
 function DownloadButton({ inverted = false }: { inverted?: boolean }) {
   const base =
-    "inline-flex h-12 items-center justify-center rounded-full px-6 font-semibold transition-colors";
+    "press inline-flex h-12 items-center justify-center rounded-full px-6 font-semibold";
 
   if (!RELEASE) return null;
 

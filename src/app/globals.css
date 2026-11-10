@@ -1,13 +1,17 @@
 @import "tailwindcss";
 
+/* Paleta: crema fresca de día; en oscuro, negro neutro (nada de marrón) con acentos de tomate y azafrán. */
 :root {
-  --background: #fffaf5;
-  --foreground: #1f1612;
+  --background: #fffdf8;
+  --foreground: #1a1614;
   --card: #ffffff;
-  --muted: #6b5d55;
-  --line: #eadfd6;
+  --muted: #655e59;
+  --line: #efe6dc;
   --tomato: #e8452c;
   --tomato-dark: #c8361f;
+  --saffron: #ffb300;
+  --leaf: #2fa84f;
+  --glow: rgba(232, 69, 44, 0.16);
 }
 
 @theme inline {
@@ -18,17 +22,22 @@
   --color-line: var(--line);
   --color-tomato: var(--tomato);
   --color-tomato-dark: var(--tomato-dark);
+  --color-saffron: var(--saffron);
+  --color-leaf: var(--leaf);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #16100d;
-    --foreground: #f6ede6;
-    --card: #211915;
-    --muted: #b3a399;
-    --line: #34281f;
+    --background: #0e0e10;
+    --foreground: #f5f4f2;
+    --card: #17171a;
+    --muted: #a3a3ab;
+    --line: #2a2a30;
+    --tomato: #ff5a3c;
+    --tomato-dark: #e8452c;
+    --glow: rgba(255, 90, 60, 0.22);
   }
 }
 
@@ -36,4 +45,187 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* ---------- Dinamismo ---------- */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Texto con degradado tomate → azafrán. */
+.gradient-text {
+  background: linear-gradient(100deg, var(--tomato) 0%, #ee5a24 50%, #f08a00 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s ease-in-out infinite alternate;
+}
+
+/* Manchas de color que flotan detrás de la portada. */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.38;
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite alternate;
+}
+
+/* Emojis de comida que flotan. */
+.float-food {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+  animation: bob 6s ease-in-out infinite;
+}
+
+/* Cinta de texto que se desplaza sola. */
+.marquee {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+  animation: scroll-x 38s linear infinite;
+}
+.marquee-wrap:hover .marquee {
+  animation-play-state: paused;
+}
+
+/* Tarjetas que se elevan al pasar el cursor o tocar. */
+.lift {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.lift:hover {
+  transform: translateY(-4px);
+  border-color: var(--tomato);
+  box-shadow: 0 14px 32px -14px var(--glow);
+}
+
+/* Botones: se hunden un poco al pulsar. */
+.press {
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.press:active {
+  transform: scale(0.96);
+}
+
+/* Barra superior en cápsula con desenfoque. */
+.nav-pill {
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+}
+
+/* Aparición al hacer scroll: solo CSS, y solo si el navegador lo soporta. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 38%;
+  }
+}
+
+/* Entrada suave al cargar la portada. */
+.rise {
+  animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.rise-2 {
+  animation-delay: 0.12s;
+}
+.rise-3 {
+  animation-delay: 0.24s;
+}
+.rise-4 {
+  animation-delay: 0.36s;
+}
+
+/* Palabra que cambia en el título. */
+.swap-word {
+  display: inline-block;
+  animation: swap 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(40px, -30px, 0) scale(1.15);
+  }
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(5deg);
+  }
+}
+@keyframes scroll-x {
+  to {
+    transform: translateX(calc(-50% - 0.375rem));
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes swap {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Quien prefiere menos movimiento no ve animaciones. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .gradient-text,
+  .blob,
+  .float-food,
+  .marquee,
+  .rise,
+  .swap-word,
+  .reveal {
+    animation: none !important;
+  }
+  .lift:hover {
+    transform: none;
+  }
 }

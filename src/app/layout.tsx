@@ -28,8 +28,8 @@ export const metadata: Metadata = {
 // Color de la barra del sistema en el móvil (sigue el esquema claro/oscuro).
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fffaf5" },
-    { media: "(prefers-color-scheme: dark)", color: "#16100d" },
+    { media: "(prefers-color-scheme: light)", color: "#fffdf8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e10" },
   ],
 };
 
