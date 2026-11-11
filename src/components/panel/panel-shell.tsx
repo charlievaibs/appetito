@@ -89,7 +89,7 @@ function PanelShell({ children }: { children: ReactNode }) {
       <AccountNotices />
 
       <nav
-        className="mt-4 flex flex-wrap gap-2 border-b border-line pb-3 print:hidden"
+        className="nav-pill sticky top-2 z-20 mt-4 flex flex-wrap gap-2 rounded-3xl p-2 print:hidden"
         aria-label="Panel"
       >
         {links.filter((l) => can(role, l.permission)).map((l) => {
@@ -100,7 +100,7 @@ function PanelShell({ children }: { children: ReactNode }) {
               href={l.href}
               aria-current={active ? "page" : undefined}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                active ? "bg-tomato text-white" : "hover:bg-line"
+                active ? "bg-tomato text-white shadow-md shadow-tomato/25" : "hover:bg-line"
               }`}
             >
               {l.label}
@@ -110,7 +110,9 @@ function PanelShell({ children }: { children: ReactNode }) {
       </nav>
 
       <PricingProvider settings={parsePricingSettings(restaurant)} audience="staff">
-        <div className="mt-6">{children}</div>
+        <div key={pathname} className="rise mt-6">
+          {children}
+        </div>
         <RateNote className="mt-6 text-center print:hidden" />
       </PricingProvider>
     </div>

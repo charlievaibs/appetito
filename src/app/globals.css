@@ -229,3 +229,89 @@ html {
     transform: none;
   }
 }
+
+/* ---------- Dinamismo en toda la app ---------- */
+
+/* Todo botón se hunde un poco al pulsarlo. */
+button:not(:disabled),
+a[class*="rounded-full"] {
+  transition-property: transform, background-color, border-color, box-shadow, color;
+  transition-duration: 0.18s;
+}
+button:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+/* Elementos de lista que entran con un pequeño rebote, escalonados con --i. */
+.pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+  animation-delay: calc(min(var(--i, 0), 10) * 45ms);
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Ventanas (dialog): suben con suavidad y el fondo se desvanece. */
+dialog[open] {
+  animation: sheet 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+dialog[open]::backdrop {
+  animation: fade 0.25s ease;
+  backdrop-filter: blur(3px);
+}
+@keyframes sheet {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Punto que late: algo está pasando en vivo (plato en preparación). */
+.live-dot {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.35rem;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: beat 1.4s ease-in-out infinite;
+}
+@keyframes beat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop,
+  .live-dot,
+  dialog[open],
+  dialog[open]::backdrop {
+    animation: none !important;
+  }
+  button:not(:disabled):active {
+    transform: none;
+  }
+}

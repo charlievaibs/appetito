@@ -15,6 +15,7 @@ export function StatusBadge({ status }: { status: string }) {
   const key = (known ? status : "pending") as ItemStatus;
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLORS[key]}`}>
+      {key === "preparing" && <span className="live-dot" aria-hidden="true" />}
       {known ? STATUS_LABEL[key] : status}
     </span>
   );

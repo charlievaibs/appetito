@@ -62,13 +62,14 @@ export function MenuList({ dishes, onPick, pickLabel = "Agregar" }: Props) {
         <p className="mt-8 text-center text-muted">No encontramos platos con esa búsqueda.</p>
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-          {visible.map((dish) => (
+          {visible.map((dish, i) => (
             <li
               key={dish.id}
-              className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3"
+              style={{ "--i": i } as React.CSSProperties}
+              className="pop lift flex items-center gap-3 rounded-2xl border border-line bg-card p-3"
             >
               <span
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-tomato/10 text-3xl"
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-tomato/15 to-saffron/25 text-3xl"
                 aria-hidden="true"
               >
                 {dish.emoji}
@@ -84,7 +85,7 @@ export function MenuList({ dishes, onPick, pickLabel = "Agregar" }: Props) {
                 <button
                   type="button"
                   onClick={() => onPick(dish)}
-                  className="inline-flex h-10 shrink-0 items-center rounded-full bg-tomato px-4 text-sm font-semibold text-white transition-colors hover:bg-tomato-dark"
+                  className="inline-flex h-10 shrink-0 items-center rounded-full bg-tomato px-4 text-sm font-semibold text-white shadow-md shadow-tomato/25 hover:bg-tomato-dark"
                   aria-label={`${pickLabel} ${dish.name}`}
                 >
                   {pickLabel}
@@ -113,7 +114,7 @@ function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${
-        active ? "border-tomato bg-tomato text-white" : "border-line bg-card hover:bg-line"
+        active ? "border-tomato bg-tomato text-white shadow-md shadow-tomato/25" : "border-line bg-card hover:border-tomato"
       }`}
     >
       {children}

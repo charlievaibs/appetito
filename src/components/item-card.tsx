@@ -25,7 +25,7 @@ export function ItemCard({ item, onEdit, onRequestChange, request, showOwner = f
   const cancelled = item.status === "cancelled";
 
   return (
-    <article className={`rounded-2xl border border-line bg-card p-4 ${cancelled ? "opacity-60" : ""}`}>
+    <article className={`pop rounded-2xl border border-line bg-card p-4 ${cancelled ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className={`font-semibold ${cancelled ? "line-through" : ""}`}>
