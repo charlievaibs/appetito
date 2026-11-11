@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { describeError } from "@/lib/errors";
 import { getSupabase } from "@/lib/supabase";
 import { cardClass, inputClass, primaryButton } from "./styles";
 
@@ -24,6 +25,24 @@ export function AuthForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  /** Envía el correo para elegir una contraseña nueva. */
+  async function forgot() {
+    if (!email) {
+      setError("Escribe tu correo arriba y vuelve a tocar «Olvidé mi contraseña».");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/restablecer`,
+    });
+    setBusy(false);
+    // Mismo aviso exista o no la cuenta, para no revelar qué correos están registrados.
+    if (error && /rate limit|too many/i.test(error.message)) setError(describeError(error.message));
+    else setNotice("Si ese correo tiene cuenta, te enviamos un enlace para elegir una contraseña nueva.");
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -102,6 +121,17 @@ export function AuthForm({
           {busy ? "Un momento…" : mode === "login" ? "Entrar" : "Crear cuenta"}
         </button>
       </form>
+
+      {mode === "login" && (
+        <button
+          type="button"
+          onClick={() => void forgot()}
+          disabled={busy}
+          className="mt-4 block text-sm text-muted underline hover:text-foreground"
+        >
+          Olvidé mi contraseña
+        </button>
+      )}
 
       <button
         type="button"

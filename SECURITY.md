@@ -82,7 +82,7 @@ Se intentó romper cada defensa; todas resistieron.
 - **Transporte:** la clave solo viaja en la cabecera `Authorization` (Bearer o Basic); no se acepta por la URL, para que no quede en registros. Las respuestas no se guardan en caché.
 - **Entrada:** cuerpo máximo de 2 MB y 2000 filas; cada fila se valida y falla por separado. Las consultas OData se resuelven en memoria con una lista cerrada de campos y funciones, sin construir SQL con el texto recibido.
 - **Archivos Excel:** se leen sin ejecutar nada (solo XML); se limitan tamaño, hojas y filas, y se descomprime solo lo necesario. Al exportar, las celdas que parecen fórmulas se neutralizan.
-- **Límite conocido:** todavía no hay límite de peticiones por clave. Con 192 bits de entropía adivinar una clave no es viable, pero una clave filtrada podría saturar el servicio hasta que se revoque.
+- **Límite de uso:** 120 peticiones por minuto por clave; al pasarlo la API responde 429 con `Retry-After`. El contador está en la base, así que vale aunque haya varias instancias del servidor.
 
 ## Verificar un APK a mano
 

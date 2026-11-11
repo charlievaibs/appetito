@@ -53,6 +53,11 @@ function mapDatabaseError(message: string): Response {
   if (message.includes("api_key_read_only")) {
     return apiError(403, "read_only_key", "Esta clave solo puede leer; crea una con permiso de escritura");
   }
+  if (message.includes("rate_limited")) {
+    return apiError(429, "rate_limited", "Demasiadas peticiones: el límite es de 120 por minuto por clave", {
+      "retry-after": "60",
+    });
+  }
   if (message.includes("item_not_found")) return apiError(404, "not_found", "No existe un artículo con ese sku");
   if (message.includes("rows_must_be_array")) return apiError(400, "invalid_body", "Se esperaba una lista de filas");
   if (message.includes("too_many_rows")) return apiError(400, "too_many_rows", "Máximo 2000 filas por llamada");

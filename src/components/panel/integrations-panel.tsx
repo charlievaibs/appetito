@@ -181,7 +181,7 @@ export function IntegrationsPanel() {
         <p className="mb-2 text-sm text-muted">
           Envía la clave en la cabecera <code>Authorization: Bearer</code>. Precios y costos van como números decimales{" "}
           <strong>sin IVA</strong>. Cada llamada de escritura acepta hasta 2000 filas; una fila con error no afecta a las demás
-          y el resultado indica cuáles fallaron. Solo cambian los campos que envíes.
+          y el resultado indica cuáles fallaron. Solo cambian los campos que envíes. Límite: 120 peticiones por minuto por clave (después responde 429).
         </p>
         <div className="flex flex-col gap-3">
           <Code>{`curl ${origin}/api/v1/menu \\\n  -H "Authorization: Bearer ${keyHint}"`}</Code>
